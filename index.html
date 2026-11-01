@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climatize - Painel Financeiro</title>
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="style.css">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tesseract.js para OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- jsPDF para exportar relatórios -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+    <!-- ========================================== -->
+    <!-- MÓDULO 1: AUTENTICAÇÃO E CADASTRO         -->
+    <!-- ========================================== -->
+    <section id="auth-screen" class="screen active">
+        <div class="auth-card">
+            <div class="logo-container">
+                <h2>Climatize</h2>
+                <p>Painel Financeiro</p>
+            </div>
+
+            <!-- Formulário de Login -->
+            <form id="form-login" class="auth-form active">
+                <h3>Entrar no Sistema</h3>
+                <input type="email" id="login-email" placeholder="E-mail" required>
+                <input type="password" id="login-senha" placeholder="Senha" required>
+                <button type="submit" class="btn-primary">Entrar</button>
+                <p class="toggle-text">Ainda não tem conta? <a href="#" id="go-to-register">Cadastre-se</a></p>
+            </form>
+
+            <!-- Formulário de Cadastro -->
+            <form id="form-register" class="auth-form">
+                <h3>Criar Conta</h3>
+                <input type="text" id="reg-nome" placeholder="Nome Completo" required>
+                <input type="email" id="reg-email" placeholder="E-mail" required>
+                <input type="tel" id="reg-telefone" placeholder="Telefone / WhatsApp" required>
+                <input type="text" id="reg-cpf" placeholder="CPF" required>
+                <input type="date" id="reg-nascimento" required>
+                <input type="password" id="reg-senha" placeholder="Senha" required>
+
+                <div class="terms-container">
+                    <input type="checkbox" id="reg-termos" required>
+                    <label for="reg-termos">
+                        Declaro que sou responsável pela veracidade dos dados digitados. Os dados inseridos no aplicativo são de minha exclusiva responsabilidade e privacidade.
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-primary">Cadastrar</button>
+                <p class="toggle-text">Já tem uma conta? <a href="#" id="go-to-login">Fazer Login</a></p>
+            </form>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- MÓDULO 2: PAINEL PRINCIPAL (DASHBOARD)     -->
+    <!-- ========================================== -->
+    <div id="app-dashboard" class="app-container hidden">
+        
+        <!-- Header -->
+        <header class="top-bar">
+            <h1>Climatize</h1>
+            <button id="btn-logout" class="btn-logout">Sair</button>
+        </header>
+
+        <main class="main-content">
+            
+            <!-- Resumo Financeiro (Cards sem MEI) -->
+            <section class="kpi-grid">
+                <div class="kpi-card in">
+                    <span>Entradas</span>
+                    <strong id="total-entradas">R$ 0,00</strong>
+                </div>
+                <div class="kpi-card out">
+                    <span>Saídas</span>
+                    <strong id="total-saidas">R$ 0,00</strong>
+                </div>
+                <div class="kpi-card total">
+                    <span>Saldo Líquido</span>
+                    <strong id="saldo-liquido">R$ 0,00</strong>
+                </div>
+            </section>
+
+            <!-- Seção de Leitura OCR de Notas Fiscais -->
+            <section class="card-section">
+                <h3>Escanear Nota Fiscal (OCR)</h3>
+                <div class="ocr-box">
+                    <input type="file" id="ocr-file-input" accept="image/*">
+                    <button id="btn-process-ocr" class="btn-secondary">Processar Imagem</button>
+                    <div id="ocr-status" class="ocr-status">Aguardando arquivo...</div>
+                </div>
+            </section>
+
+            <!-- Seção de Novo Lançamento -->
+            <section class="card-section">
+                <h3>Novo Lançamento</h3>
+                <form id="form-transacao" class="grid-form">
+                    <select id="t-tipo" required>
+                        <option value="entrada">Entrada (+)</option>
+                        <option value="saida">Saída (-)</option>
+                    </select>
+
+                    <select id="t-categoria" required>
+                        <!-- Opções trocadas dinamicamente via JS -->
+                    </select>
+
+                    <input type="text" id="t-descricao" placeholder="Descrição opcional (ex: Cliente João)" required>
+                    <input type="number" id="t-valor" step="0.01" placeholder="Valor (R$)" required>
+                    <input type="date" id="t-data" required>
+                    
+                    <button type="submit" class="btn-primary">Adicionar Lançamento</button>
+                </form>
+            </section>
+
+            <!-- Gráfico de Fluxo de Caixa -->
+            <section class="card-section">
+                <h3>Visão Geral Financeira</h3>
+                <div class="chart-container">
+                    <canvas id="financeChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Ferramentas de Exportação -->
+            <section class="card-section export-actions">
+                <h3>Exportar Relatórios</h3>
+                <div class="btn-group">
+                    <button id="btn-export-csv" class="btn-outline">Exportar Excel (CSV)</button>
+                    <button id="btn-export-pdf" class="btn-outline">Exportar Relatório PDF</button>
+                </div>
+            </section>
+
+            <!-- Tabela de Lançamentos -->
+            <section class="card-section">
+                <h3>Histórico de Lançamentos</h3>
+                <div class="table-responsive">
+                    <table id="transacoes-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Categoria</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transacoes-list">
+                            <!-- Inserido dinamicamente via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Script Principal JS -->
+    <script src="app.js"></script>
+</body>
+</html>
