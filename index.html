@@ -66,15 +66,18 @@
     <!-- ========================================== -->
     <div id="app-dashboard" class="app-container hidden">
         
-        <!-- Header -->
+        <!-- Header com Opção de Alterar Senha e Sair -->
         <header class="top-bar">
             <h1>Climatize</h1>
-            <button id="btn-logout" class="btn-logout">Sair</button>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-alterar-senha" class="btn-logout">Alterar Senha</button>
+                <button id="btn-logout" class="btn-logout">Sair</button>
+            </div>
         </header>
 
         <main class="main-content">
             
-            <!-- Resumo Financeiro (Cards sem MEI) -->
+            <!-- Resumo Financeiro -->
             <section class="kpi-grid">
                 <div class="kpi-card in">
                     <span>Entradas</span>
@@ -90,12 +93,12 @@
                 </div>
             </section>
 
-            <!-- Seção de Leitura OCR de Notas Fiscais -->
+            <!-- Seção de Leitura OCR de Notas Fiscais (Câmera Direta) -->
             <section class="card-section">
                 <h3>Escanear Nota Fiscal (OCR)</h3>
                 <div class="ocr-box">
-                    <input type="file" id="ocr-file-input" accept="image/*">
-                    <button id="btn-process-ocr" class="btn-secondary">Processar Imagem</button>
+                    <input type="file" id="ocr-file-input" accept="image/*" capture="environment">
+                    <button id="btn-process-ocr" class="btn-secondary">Tirar Foto / Carregar e Preencher</button>
                     <div id="ocr-status" class="ocr-status">Aguardando arquivo...</div>
                 </div>
             </section>
@@ -150,6 +153,7 @@
                                 <th>Categoria</th>
                                 <th>Descrição</th>
                                 <th>Valor</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="transacoes-list">

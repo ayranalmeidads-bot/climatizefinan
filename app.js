@@ -199,7 +199,7 @@ function updateCalculos() {
     document.getElementById('saldo-liquido').innerText = `R$ ${saldo.toFixed(2)}`;
 }
 
-// Renderizar Tabela
+// Renderizar Tabela com Botão de Excluir
 function renderTabela() {
     const tbody = document.getElementById('transacoes-list');
     tbody.innerHTML = '';
@@ -212,9 +212,27 @@ function renderTabela() {
             <td><strong>${t.categoria}</strong></td>
             <td>${t.descricao || '-'}</td>
             <td>R$ ${t.valor.toFixed(2)}</td>
+            <td><button onclick="deletarTransacao('${t.id}')" class="btn-delete" style="background: #e71d36; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Excluir</button></td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+// Função para Deletar Transação
+async function deletarTransacao(id) {
+    if (!confirm("Tens a certeza de que queres apagar este lançamento?")) return;
+
+    try {
+        const { error } = await supabase10
+            .from('transacoes')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        await buscarTransacoes();
+    } catch (error) {
+        alert("Erro ao apagar transação: " + error.message);
+    }
 }
 
 // ==========================================
@@ -248,27 +266,50 @@ function updateChart() {
 }
 
 // ==========================================
-// MÓDULO OCR (TESSERACT.JS)
+// MÓDULO OCR INTELIGENTE (TESSERACT.JS)
 // ==========================================
 document.getElementById('btn-process-ocr').addEventListener('click', () => {
     const fileInput = document.getElementById('ocr-file-input');
     const statusDiv = document.getElementById('ocr-status');
 
     if (fileInput.files.length === 0) {
-        alert('Por favor, selecione uma foto de nota fiscal.');
+        alert('Por favor, tire uma foto ou selecione uma imagem.');
         return;
     }
 
     const file = fileInput.files[0];
-    statusDiv.innerText = 'Lendo imagem... Aguarde.';
+    statusDiv.innerText = 'Lendo imagem e extraindo dados... Aguarde.';
 
     Tesseract.recognize(
         file,
         'por',
         { logger: m => console.log(m) }
     ).then(({ data: { text } }) => {
-        statusDiv.innerText = 'Leitura concluída!';
-        alert('Texto extraído da Nota Fiscal:\n\n' + text);
+        statusDiv.innerText = 'Leitura concluída! Verifique os dados abaixo.';
+        
+        // Tenta extrair valores monetários do texto lido (ex: R$ 150,00 ou 150.00)
+        const regexValores = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
+        let match;
+        let maioresValores = [];
+        while ((match = regexValores.exec(text)) !== null) {
+            let num = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+            maioresValores.push(num);
+        }
+
+        // Pega o maior valor encontrado na nota (geralmente o total)
+        if (maioresValores.length > 0) {
+            const maiorValor = Math.max(...maioresValores);
+            document.getElementById('t-valor').value = maiorValor.toFixed(2);
+        }
+
+        // Preenche a descrição com uma prévia do texto ou avisa
+        document.getElementById('t-descricao').value = "Nota Fiscal Escaneada";
+        
+        // Define a data de hoje automaticamente
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('t-data').value = hoje;
+
+        alert('Dados extraídos com sucesso! Revise os campos no formulário de "Novo Lançamento" e clique em Adicionar.');
     }).catch(err => {
         statusDiv.innerText = 'Erro ao processar imagem.';
         console.error(err);
@@ -306,4 +347,20 @@ document.getElementById('btn-export-pdf').addEventListener('click', () => {
     });
 
     doc.save("climatize_relatorio.pdf");
+});
+
+// ==========================================
+// ALTERAÇÃO DE SENHA
+// ==========================================
+document.getElementById('btn-alterar-senha').addEventListener('click', async () => {
+    const novaSenha = prompt("Digite a sua nova senha:");
+    if (!novaSenha) return;
+
+    try {
+        const { error } = await supabase10.auth.updateUser({ password: novaSenha });
+        if (error) throw error;
+        alert("Senha alterada com sucesso!");
+    } catch (error) {
+        alert("Erro ao alterar senha: " + error.message);
+    }
 });
