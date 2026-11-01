@@ -1,9 +1,9 @@
 // ==========================================
 // CONFIGURAÇÃO DO SUPABASE
 // ==========================================
-const SUPABASE_URL = "https://itkzuoqdgxkziwjkege.supabase.co";
-const SUPABASE_KEY = "sb_publishable_XRwRbPVyeDggyeYcbA0fQQ_ImSkKoi6";
-const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const SUPABASE_URL = "https://itkzuoqdgxkzlwjkege.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0a3p1b3FnZ2t4enxsd2prZWdlIiwicm9sZSI6InB1YmxpY2hlIiwiaWF0IjoxNzEzMTk2OTE5LCJleHAiOjIwMjg3NTI5MTl9.sb_publishable_XRwRbPyyeEdggyeycba0FQQ_ImSkKo16";
+const supabase10 = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // Categorias específicas fornecidas pelo usuário
 const CATEGORIAS = {
