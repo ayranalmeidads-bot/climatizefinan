@@ -174,6 +174,7 @@ formTransacao.addEventListener('submit', async (e) => {
         formTransacao.reset();
         atualizarOpcoesCategorias();
         await buscarTransacoes();
+        alert("Lançamento adicionado com sucesso!");
     } catch (error) {
         alert("Erro ao salvar transação: " + error.message);
     }
@@ -203,18 +204,18 @@ function renderTabela() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${t.data}</td>
-            <td><b style="color: ${t.tipo === 'entrada' ? 'green' : 'red'}">${t.tipo.toUpperCase()}</b></td>
+            <td><b style="color: ${t.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)'}">${t.tipo.toUpperCase()}</b></td>
             <td><strong>${t.categoria}</strong></td>
             <td>${t.descricao || '-'}</td>
             <td>R$ ${t.valor.toFixed(2)}</td>
-            <td><button onclick="deletarTransacao('${t.id}')" class="btn-delete" style="background: #e71d36; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Excluir</button></td>
+            <td><button onclick="deletarTransacao('${t.id}')" class="btn-delete" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Excluir</button></td>
         `;
         tbody.appendChild(tr);
     });
 }
 
 async function deletarTransacao(id) {
-    if (!confirm("Tens a certeza de que queres apagar este lançamento?")) return;
+    if (!confirm("Tem certeza de que deseja apagar este lançamento?")) return;
 
     try {
         const { error } = await supabase10
@@ -241,7 +242,7 @@ function renderChart() {
             datasets: [{
                 label: 'Total (R$)',
                 data: [0, 0],
-                backgroundColor: ['#2ec4b6', '#e71d36']
+                backgroundColor: ['var(--success)', 'var(--danger)']
             }]
         },
         options: {
@@ -260,9 +261,10 @@ function updateChart() {
 }
 
 // ==========================================
-// MÓDULO OCR INTELIGENTE (COM FLUXO INTERMEDIÁRIO DE REVISÃO)
+// MÓDULO OCR EM NUVEM (API OCR.SPACE) COM FLUXO DE CÂMERA
 // ==========================================
-const btnTriggerOcr = document.getElementById('btn-trigger-ocr');
+const btnTriggerCamera = document.getElementById('btn-trigger-camera');
+const btnTriggerGallery = document.getElementById('btn-trigger-gallery');
 const ocrFileInput = document.getElementById('ocr-file-input');
 const ocrPreviewContainer = document.getElementById('ocr-preview-container');
 const ocrPrevDesc = document.getElementById('ocr-prev-desc');
@@ -271,27 +273,53 @@ const btnConfirmOcr = document.getElementById('btn-confirm-ocr');
 const btnCancelOcr = document.getElementById('btn-cancel-ocr');
 const statusDiv = document.getElementById('ocr-status');
 
-btnTriggerOcr.addEventListener('click', () => {
+// Botão para tirar foto direto na rua (abre câmera traseira por padrão)
+btnTriggerCamera.addEventListener('click', () => {
+    ocrFileInput.setAttribute('capture', 'environment');
     ocrFileInput.click();
 });
 
-ocrFileInput.addEventListener('change', (e) => {
+// Botão alternativo para escolher foto da galeria
+btnTriggerGallery.addEventListener('click', () => {
+    ocrFileInput.removeAttribute('capture');
+    ocrFileInput.click();
+});
+
+ocrFileInput.addEventListener('change', async (e) => {
     if (e.target.files.length === 0) return;
 
     const file = e.target.files[0];
-    statusDiv.innerText = 'Lendo imagem e extraindo dados... Aguarde.';
+    statusDiv.innerText = 'Enviando imagem para análise na nuvem (OCR.space)... Aguarde.';
 
-    Tesseract.recognize(
-        file,
-        'por',
-        { logger: m => console.log(m) }
-    ).then(({ data: { text } }) => {
-        statusDiv.innerText = 'Leitura concluída! Confira e ajuste os dados na caixa de revisão abaixo.';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('apikey', 'helloworld'); // Chave pública gratuita padrão do OCR.space
+    formData.append('language', 'por');
+    formData.append('isOverlayRequired', 'false');
+
+    try {
+        const response = await fetch('https://api.ocr.space/parse/image', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
         
+        if (result.IsErroredOnProcessing) {
+            throw new Error(result.ErrorMessage || 'Erro ao processar OCR.');
+        }
+
+        const parsedText = result.ParsedResults && result.ParsedResults.length > 0 
+            ? result.ParsedResults[0].ParsedText 
+            : '';
+
+        statusDiv.innerText = 'Leitura concluída com sucesso! Confira e confirme os dados abaixo.';
+
+        // Expressão regular para extrair valores monetários no formato brasileiro
         const regexValores = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
         let match;
         let maioresValores = [];
-        while ((match = regexValores.exec(text)) !== null) {
+        while ((match = regexValores.exec(parsedText)) !== null) {
             let num = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
             maioresValores.push(num);
         }
@@ -303,35 +331,65 @@ ocrFileInput.addEventListener('change', (e) => {
             ocrPrevVal.value = '';
         }
 
-        const descricaoResumida = text.replace(/[\n\r]+/g, ' ').substring(0, 60).trim();
+        const descricaoResumida = parsedText.replace(/[\n\r]+/g, ' ').substring(0, 60).trim();
         ocrPrevDesc.value = descricaoResumida || "Nota Fiscal Escaneada";
 
         // Exibe o painel intermediário de revisão
         ocrPreviewContainer.style.display = 'block';
 
-    }).catch(err => {
-        statusDiv.innerText = 'Erro ao processar imagem.';
+    } catch (err) {
+        statusDiv.innerText = 'Erro ao processar imagem na nuvem.';
         console.error(err);
-    });
+        alert("Erro no OCR: " + err.message);
+    }
 });
 
-// Botão Confirmar OCR: Joga os dados revisados para o formulário principal
-btnConfirmOcr.addEventListener('click', () => {
-    document.getElementById('t-descricao').value = ocrPrevDesc.value;
-    document.getElementById('t-valor').value = ocrPrevVal.value;
-    
-    const hoje = new Date().toISOString().split('T')[0];
-    document.getElementById('t-data').value = hoje;
+// Botão Confirmar OCR: Submete os dados revisados diretamente para o Supabase sem preenchimentos manuais redundantes
+btnConfirmOcr.addEventListener('click', async () => {
+    const descricao = ocrPrevDesc.value;
+    const valor = parseFloat(ocrPrevVal.value);
 
-    ocrPreviewContainer.style.display = 'none';
-    statusDiv.innerText = 'Dados aplicados ao formulário! Agora clique em "Adicionar Lançamento".';
-    ocrFileInput.value = '';
+    if (!valor || isNaN(valor)) {
+        alert("Por favor, informe um valor válido.");
+        return;
+    }
+
+    try {
+        const { data: { user } } = await supabase10.auth.getUser();
+        if (!user) throw new Error("Usuário não autenticado");
+
+        const tipo = 'saida'; // Notas de compras geralmente entram como saída
+        const categoria = CATEGORIAS.saida[0]; // Categoria padrão otimizada
+        const dataHoje = new Date().toISOString().split('T')[0];
+
+        const novaTransacao = { 
+            tipo, 
+            categoria, 
+            descricao, 
+            valor, 
+            data: dataHoje,
+            user_id: user.id 
+        };
+
+        const { error } = await supabase10
+            .from('transacoes')
+            .insert([novaTransacao]);
+
+        if (error) throw error;
+
+        ocrPreviewContainer.style.display = 'none';
+        statusDiv.innerText = 'Lançamento da nota enviado com sucesso para o Supabase!';
+        ocrFileInput.value = '';
+        await buscarTransacoes();
+    } catch (error) {
+        alert("Erro ao subir lançamento da nota: " + error.message);
+    }
 });
 
 // Botão Cancelar OCR: Descarta os dados da revisão
 btnCancelOcr.addEventListener('click', () => {
     ocrPreviewContainer.style.display = 'none';
-    statusDiv.innerText = 'Leitura descartada. Clique no botão acima para tentar novamente.';
+    statusDiv.innerText = 'Leitura descartada. Clique em tirar foto para tentar novamente.';
     ocrFileInput.value = '';
 });
 

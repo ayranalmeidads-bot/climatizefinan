@@ -10,8 +10,6 @@
     <link rel="manifest" href="manifest.json">
     <!-- Chart.js para Gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Tesseract.js para OCR -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- jsPDF para exportar relatórios -->
@@ -25,9 +23,9 @@
     <section id="auth-screen" class="screen active">
         <div class="auth-card">
             <div class="logo-container">
-                <img src="climatize.png" alt="Climatize Logo">
+                <img src="climatize.png" alt="Climatize Logo" class="climatize-logo-img">
                 <h2>Climatize</h2>
-                <p>Painel Financeiro</p>
+                <p>Painel Financeiro Profissional</p>
             </div>
 
             <!-- Formulário de Login -->
@@ -52,7 +50,7 @@
                 <div class="terms-container">
                     <input type="checkbox" id="reg-termos" required>
                     <label for="reg-termos">
-                        Declaro que sou responsável pela veracidade dos dados digitados. Os dados inseridos no aplicativo são de minha exclusiva responsabilidade e privacidade.
+                        Declaro que sou responsável pela veracidade dos dados digitados.
                     </label>
                 </div>
 
@@ -70,7 +68,7 @@
         <!-- Header com Logo e Ações -->
         <header class="top-bar">
             <div class="logo-area">
-                <img src="climatize.png" alt="Climatize Logo" class="brand-logo">
+                <img src="climatize.png" alt="Climatize Logo" class="brand-logo climatize-logo-img">
             </div>
             <div style="display: flex; gap: 10px;">
                 <button id="btn-alterar-senha" class="btn-logout">Alterar Senha</button>
@@ -96,14 +94,19 @@
                 </div>
             </section>
 
-            <!-- Seção de Leitura OCR com Seleção Intermediária -->
+            <!-- Seção de Leitura OCR Inteligente via Nuvem (OCR.space) -->
             <section class="card-section">
-                <h3>Escanear Nota Fiscal (OCR)</h3>
+                <h3>Escanear Nota Fiscal (OCR em Nuvem)</h3>
                 <div class="ocr-box">
-                    <!-- 'capture' removido para permitir escolher entre Câmera ou Galeria -->
-                    <input type="file" id="ocr-file-input" accept="image/*" style="display: none;">
-                    <button type="button" id="btn-trigger-ocr" class="btn-secondary">📸 Tirar Foto ou Escolher Nota Fiscal</button>
-                    <div id="ocr-status" class="ocr-status">Clique no botão acima para escanear. Os dados passarão por revisão antes de salvar.</div>
+                    <!-- Input configurado para abrir diretamente a câmera em dispositivos móveis, com suporte alternativo -->
+                    <input type="file" id="ocr-file-input" accept="image/*" capture="environment" style="display: none;">
+                    
+                    <div class="ocr-actions-group">
+                        <button type="button" id="btn-trigger-camera" class="btn-secondary">📸 Tirar Foto da Nota</button>
+                        <button type="button" id="btn-trigger-gallery" class="btn-outline" style="border-color: var(--accent); color: var(--primary);">📂 Escolher da Galeria</button>
+                    </div>
+
+                    <div id="ocr-status" class="ocr-status">Aponte a câmera para a nota ou escolha da galeria. O processamento na nuvem extrairá os dados automaticamente.</div>
 
                     <!-- CAIXA DE REVISÃO INTERMEDIÁRIA DO OCR -->
                     <div id="ocr-preview-container" class="ocr-preview-box">
@@ -119,16 +122,16 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button type="button" id="btn-confirm-ocr" class="btn-primary" style="background-color: var(--success); padding: 8px 15px; cursor: pointer;">✅ Confirmar para o Formulário</button>
+                            <button type="button" id="btn-confirm-ocr" class="btn-primary" style="background-color: var(--success); padding: 8px 15px; cursor: pointer;">✅ Confirmar e Enviar Lançamento</button>
                             <button type="button" id="btn-cancel-ocr" class="btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 8px 15px; cursor: pointer;">❌ Descartar</button>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Seção de Novo Lançamento -->
+            <!-- Seção de Novo Lançamento Manual (Simplificada) -->
             <section class="card-section">
-                <h3>Novo Lançamento</h3>
+                <h3>Novo Lançamento Manual</h3>
                 <form id="form-transacao" class="grid-form">
                     <select id="t-tipo" required>
                         <option value="entrada">Entrada (+)</option>
@@ -139,7 +142,7 @@
                         <!-- Opções trocadas dinamicamente via JS -->
                     </select>
 
-                    <input type="text" id="t-descricao" placeholder="Descrição opcional (ex: Cliente João)" required>
+                    <input type="text" id="t-descricao" placeholder="Descrição (ex: Cliente João)" required>
                     <input type="number" id="t-valor" step="0.01" placeholder="Valor (R$)" required>
                     <input type="date" id="t-data" required>
                     
