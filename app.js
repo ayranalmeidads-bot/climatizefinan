@@ -260,18 +260,22 @@ function updateChart() {
 }
 
 // ==========================================
-// MÓDULO OCR INTELIGENTE (BOTÃO ÚNICO)
+// MÓDULO OCR INTELIGENTE (COM FLUXO INTERMEDIÁRIO DE REVISÃO)
 // ==========================================
 const btnTriggerOcr = document.getElementById('btn-trigger-ocr');
 const ocrFileInput = document.getElementById('ocr-file-input');
+const ocrPreviewContainer = document.getElementById('ocr-preview-container');
+const ocrPrevDesc = document.getElementById('ocr-prev-desc');
+const ocrPrevVal = document.getElementById('ocr-prev-val');
+const btnConfirmOcr = document.getElementById('btn-confirm-ocr');
+const btnCancelOcr = document.getElementById('btn-cancel-ocr');
+const statusDiv = document.getElementById('ocr-status');
 
 btnTriggerOcr.addEventListener('click', () => {
     ocrFileInput.click();
 });
 
 ocrFileInput.addEventListener('change', (e) => {
-    const statusDiv = document.getElementById('ocr-status');
-
     if (e.target.files.length === 0) return;
 
     const file = e.target.files[0];
@@ -282,7 +286,7 @@ ocrFileInput.addEventListener('change', (e) => {
         'por',
         { logger: m => console.log(m) }
     ).then(({ data: { text } }) => {
-        statusDiv.innerText = 'Leitura concluída! Revise e ajuste os dados no formulário abaixo.';
+        statusDiv.innerText = 'Leitura concluída! Confira e ajuste os dados na caixa de revisão abaixo.';
         
         const regexValores = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
         let match;
@@ -294,24 +298,45 @@ ocrFileInput.addEventListener('change', (e) => {
 
         if (maioresValores.length > 0) {
             const maiorValor = Math.max(...maioresValores);
-            document.getElementById('t-valor').value = maiorValor.toFixed(2);
+            ocrPrevVal.value = maiorValor.toFixed(2);
+        } else {
+            ocrPrevVal.value = '';
         }
 
         const descricaoResumida = text.replace(/[\n\r]+/g, ' ').substring(0, 60).trim();
-        document.getElementById('t-descricao').value = descricaoResumida || "Nota Fiscal Escaneada";
-        
-        const hoje = new Date().toISOString().split('T')[0];
-        document.getElementById('t-data').value = hoje;
+        ocrPrevDesc.value = descricaoResumida || "Nota Fiscal Escaneada";
 
-        alert('Dados extraídos! Revise os campos e clique em "Adicionar Lançamento".');
+        // Exibe o painel intermediário de revisão
+        ocrPreviewContainer.style.display = 'block';
+
     }).catch(err => {
         statusDiv.innerText = 'Erro ao processar imagem.';
         console.error(err);
     });
 });
 
+// Botão Confirmar OCR: Joga os dados revisados para o formulário principal
+btnConfirmOcr.addEventListener('click', () => {
+    document.getElementById('t-descricao').value = ocrPrevDesc.value;
+    document.getElementById('t-valor').value = ocrPrevVal.value;
+    
+    const hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('t-data').value = hoje;
+
+    ocrPreviewContainer.style.display = 'none';
+    statusDiv.innerText = 'Dados aplicados ao formulário! Agora clique em "Adicionar Lançamento".';
+    ocrFileInput.value = '';
+});
+
+// Botão Cancelar OCR: Descarta os dados da revisão
+btnCancelOcr.addEventListener('click', () => {
+    ocrPreviewContainer.style.display = 'none';
+    statusDiv.innerText = 'Leitura descartada. Clique no botão acima para tentar novamente.';
+    ocrFileInput.value = '';
+});
+
 // ==========================================
-// EXPORTAÇÃO (CSV & PDF COM LOGO)
+// EXPORTAÇÃO (CSV & PDF COM LOGO NA RAIZ)
 // ==========================================
 document.getElementById('btn-export-csv').addEventListener('click', () => {
     let csvContent = "data:text/csv;charset=utf-8,Data,Tipo,Categoria,Descricao,Valor\n";
@@ -343,10 +368,10 @@ document.getElementById('btn-export-pdf').addEventListener('click', async () => 
     };
 
     try {
-        const logoData = await getBase64ImageFromUrl('img/climatize.png');
+        const logoData = await getBase64ImageFromUrl('climatize.png');
         doc.addImage(logoData, 'PNG', 14, 10, 35, 12);
     } catch (e) {
-        console.log("Logo não encontrada, gerando PDF sem imagem.");
+        console.log("Logo não encontrada na raiz, gerando PDF sem imagem.");
     }
 
     doc.setFontSize(16);

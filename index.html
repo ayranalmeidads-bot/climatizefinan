@@ -25,7 +25,7 @@
     <section id="auth-screen" class="screen active">
         <div class="auth-card">
             <div class="logo-container">
-                <img src="climatize.png" alt="Climatize Logo" style="max-height: 50px; margin-bottom: 10px;">
+                <img src="climatize.png" alt="Climatize Logo">
                 <h2>Climatize</h2>
                 <p>Painel Financeiro</p>
             </div>
@@ -96,13 +96,33 @@
                 </div>
             </section>
 
-            <!-- Seção de Leitura OCR de Notas Fiscais (Botão Único e Direto) -->
+            <!-- Seção de Leitura OCR com Seleção Intermediária -->
             <section class="card-section">
                 <h3>Escanear Nota Fiscal (OCR)</h3>
                 <div class="ocr-box">
-                    <input type="file" id="ocr-file-input" accept="image/*" capture="environment" style="display: none;">
+                    <!-- 'capture' removido para permitir escolher entre Câmera ou Galeria -->
+                    <input type="file" id="ocr-file-input" accept="image/*" style="display: none;">
                     <button type="button" id="btn-trigger-ocr" class="btn-secondary">📸 Tirar Foto ou Escolher Nota Fiscal</button>
-                    <div id="ocr-status" class="ocr-status">Clique no botão acima para escanear. Os dados preencherão o formulário abaixo automaticamente para revisão.</div>
+                    <div id="ocr-status" class="ocr-status">Clique no botão acima para escanear. Os dados passarão por revisão antes de salvar.</div>
+
+                    <!-- CAIXA DE REVISÃO INTERMEDIÁRIA DO OCR -->
+                    <div id="ocr-preview-container" class="ocr-preview-box">
+                        <h4 style="margin-bottom: 10px; color: var(--primary);">Revisar Dados Extraídos da Nota</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: bold;">Descrição:</label>
+                                <input type="text" id="ocr-prev-desc" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: bold;">Valor (R$):</label>
+                                <input type="number" step="0.01" id="ocr-prev-val" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" id="btn-confirm-ocr" class="btn-primary" style="background-color: var(--success); padding: 8px 15px; cursor: pointer;">✅ Confirmar para o Formulário</button>
+                            <button type="button" id="btn-cancel-ocr" class="btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 8px 15px; cursor: pointer;">❌ Descartar</button>
+                        </div>
+                    </div>
                 </div>
             </section>
 

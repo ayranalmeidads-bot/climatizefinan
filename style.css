@@ -53,11 +53,13 @@ body {
 .logo-container {
     text-align: center;
     margin-bottom: 25px;
-    
 }
 
 .logo-container img {
-    max-height: 90px;
+    max-height: 85px; /* Tamanho ajustado da logo no login */
+    width: auto;
+    margin-bottom: 10px;
+    object-fit: contain;
 }
 
 .logo-container h2 {
@@ -145,11 +147,11 @@ body {
 .logo-area {
     display: flex;
     align-items: center;
-    max-height: 40px;
 }
 
 .brand-logo {
-    height: 80px;
+    height: 55px; /* Tamanho ajustado da logo no cabeçalho */
+    width: auto;
     object-fit: contain;
 }
 
@@ -225,6 +227,16 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+/* Caixa de Revisão OCR Intermediária */
+.ocr-preview-box {
+    background-color: #f8f9fa;
+    border: 2px dashed var(--accent);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    display: none; /* Oculto até que haja uma leitura */
 }
 
 .btn-secondary {
