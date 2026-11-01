@@ -7,12 +7,8 @@ const supabase10 = window.supabase ? window.supabase.createClient(SUPABASE_URL, 
 
 // Categorias específicas fornecidas pelo usuário
 const CATEGORIAS = {
-    entrada: [
-        "Instalação", "Higienização", "Manutenção corretiva", "Infraestrutura", "Desinstalação"
-    ],
-    saida: [
-        "Tubulação", "Suporte", "Kit instalação", "Fita PVC", "Aluminizada", "Fita isolante", "Silver tape", "Ferramenta", "Gasolina", "Ajudante"
-    ]
+    entrada: ["Instalação", "Higienização", "Manutenção corretiva", "Infraestrutura", "Desinstalação"],
+    saida: ["Tubulação", "Suporte", "Kit instalação", "Fita PVC", "Aluminizada", "Fita isolante", "Silver tape", "Ferramenta", "Gasolina", "Ajudante"]
 };
 
 // Estado da Aplicação
@@ -208,7 +204,7 @@ function renderTabela() {
             <td><strong>${t.categoria}</strong></td>
             <td>${t.descricao || '-'}</td>
             <td>R$ ${t.valor.toFixed(2)}</td>
-            <td><button onclick="deletarTransacao('${t.id}')" class="btn-delete" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Excluir</button></td>
+            <td><button onclick="deletarTransacao('${t.id}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Excluir</button></td>
         `;
         tbody.appendChild(tr);
     });
@@ -261,25 +257,25 @@ function updateChart() {
 }
 
 // ==========================================
-// MÓDULO OCR EM NUVEM (API OCR.SPACE) COM FLUXO DE CÂMERA
+// MÓDULO OCR DETALHADO POR ITENS (NUVEM OCR.SPACE)
 // ==========================================
 const btnTriggerCamera = document.getElementById('btn-trigger-camera');
 const btnTriggerGallery = document.getElementById('btn-trigger-gallery');
 const ocrFileInput = document.getElementById('ocr-file-input');
 const ocrPreviewContainer = document.getElementById('ocr-preview-container');
+const ocrPrevTipo = document.getElementById('ocr-prev-tipo');
+const ocrPrevTotal = document.getElementById('ocr-prev-total');
 const ocrPrevDesc = document.getElementById('ocr-prev-desc');
-const ocrPrevVal = document.getElementById('ocr-prev-val');
+const ocrItensList = document.getElementById('ocr-itens-list');
 const btnConfirmOcr = document.getElementById('btn-confirm-ocr');
 const btnCancelOcr = document.getElementById('btn-cancel-ocr');
 const statusDiv = document.getElementById('ocr-status');
 
-// Botão para tirar foto direto na rua (abre câmera traseira por padrão)
 btnTriggerCamera.addEventListener('click', () => {
     ocrFileInput.setAttribute('capture', 'environment');
     ocrFileInput.click();
 });
 
-// Botão alternativo para escolher foto da galeria
 btnTriggerGallery.addEventListener('click', () => {
     ocrFileInput.removeAttribute('capture');
     ocrFileInput.click();
@@ -289,11 +285,11 @@ ocrFileInput.addEventListener('change', async (e) => {
     if (e.target.files.length === 0) return;
 
     const file = e.target.files[0];
-    statusDiv.innerText = 'Enviando imagem para análise na nuvem (OCR.space)... Aguarde.';
+    statusDiv.innerText = 'Enviando imagem para análise detalhada na nuvem (OCR.space)... Aguarde.';
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('apikey', 'helloworld'); // Chave pública gratuita padrão do OCR.space
+    formData.append('apikey', 'helloworld');
     formData.append('language', 'por');
     formData.append('isOverlayRequired', 'false');
 
@@ -313,83 +309,130 @@ ocrFileInput.addEventListener('change', async (e) => {
             ? result.ParsedResults[0].ParsedText 
             : '';
 
-        statusDiv.innerText = 'Leitura concluída com sucesso! Confira e confirme os dados abaixo.';
+        statusDiv.innerText = 'Leitura concluída! Revise e ajuste os itens e valores abaixo.';
 
-        // Expressão regular para extrair valores monetários no formato brasileiro
-        const regexValores = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
-        let match;
-        let maioresValores = [];
-        while ((match = regexValores.exec(parsedText)) !== null) {
-            let num = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
-            maioresValores.push(num);
-        }
+        // Quebra o texto por linhas para isolar itens e valores associados
+        const linhas = parsedText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        let itensEncontrados = [];
+        let valoresExtraidos = [];
 
-        if (maioresValores.length > 0) {
-            const maiorValor = Math.max(...maioresValores);
-            ocrPrevVal.value = maiorValor.toFixed(2);
+        const regexValor = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
+
+        linhas.forEach((linha) => {
+            let match;
+            let achouValorNaLinha = false;
+            while ((match = regexValor.exec(linha)) !== null) {
+                let valNum = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+                valoresExtraidos.push(valNum);
+                achouValorNaLinha = true;
+            }
+            // Filtra linhas úteis que parecem itens de compra
+            if (linha.length > 3 && !/total|cnpj|cpf|data|rua|fone|caixa|operador|dinheiro|troco/i.test(linha)) {
+                itensEncontrados.push({ 
+                    texto: linha, 
+                    valor: achouValorNaLinha ? valoresExtraidos[valoresExtraidos.length - 1] || 0 : 0 
+                });
+            }
+        });
+
+        // Define o total geral estimado
+        if (valoresExtraidos.length > 0) {
+            ocrPrevTotal.value = Math.max(...valoresExtraidos).toFixed(2);
         } else {
-            ocrPrevVal.value = '';
+            ocrPrevTotal.value = '0.00';
         }
 
-        const descricaoResumida = parsedText.replace(/[\n\r]+/g, ' ').substring(0, 60).trim();
-        ocrPrevDesc.value = descricaoResumida || "Nota Fiscal Escaneada";
+        ocrPrevDesc.value = itensEncontrados[0]?.texto || "Nota Fiscal Escaneada";
+        ocrPrevTipo.value = 'saida'; // Padrão para compras de materiais
 
-        // Exibe o painel intermediário de revisão
+        // Renderiza dinamicamente cada item na tela de confirmação
+        ocrItensList.innerHTML = '';
+        if (itensEncontrados.length === 0) {
+            itensEncontrados.push({ texto: "Item geral da nota", valor: ocrPrevTotal.value });
+        }
+
+        itensEncontrados.forEach((item, index) => {
+            const divItem = document.createElement('div');
+            divItem.style.cssText = "display: flex; gap: 8px; align-items: center;";
+            divItem.innerHTML = `
+                <span style="font-size: 0.8rem; font-weight: bold; min-width: 45px;">Item ${index + 1}:</span>
+                <input type="text" class="item-desc" value="${item.texto}" style="flex: 2; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem;">
+                <input type="number" step="0.01" class="item-val" value="${item.valor || ''}" placeholder="Valor R$" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem;">
+            `;
+            ocrItensList.appendChild(divItem);
+        });
+
+        // Exibe o painel intermediário de revisão detalhada
         ocrPreviewContainer.style.display = 'block';
 
     } catch (err) {
-        statusDiv.innerText = 'Erro ao processar imagem na nuvem.';
+        statusDiv.innerText = 'Erro ao processar imagem.';
         console.error(err);
         alert("Erro no OCR: " + err.message);
     }
 });
 
-// Botão Confirmar OCR: Submete os dados revisados diretamente para o Supabase sem preenchimentos manuais redundantes
+// Botão Confirmar OCR: Salva os itens revisados diretamente no Supabase
 btnConfirmOcr.addEventListener('click', async () => {
-    const descricao = ocrPrevDesc.value;
-    const valor = parseFloat(ocrPrevVal.value);
-
-    if (!valor || isNaN(valor)) {
-        alert("Por favor, informe um valor válido.");
-        return;
-    }
-
     try {
         const { data: { user } } = await supabase10.auth.getUser();
         if (!user) throw new Error("Usuário não autenticado");
 
-        const tipo = 'saida'; // Notas de compras geralmente entram como saída
-        const categoria = CATEGORIAS.saida[0]; // Categoria padrão otimizada
+        const tipo = ocrPrevTipo.value;
+        const descricaoGeral = ocrPrevDesc.value;
         const dataHoje = new Date().toISOString().split('T')[0];
+        const categoriaPadrao = CATEGORIAS[tipo][0];
 
-        const novaTransacao = { 
-            tipo, 
-            categoria, 
-            descricao, 
-            valor, 
-            data: dataHoje,
-            user_id: user.id 
-        };
+        const linhasItens = ocrItensList.querySelectorAll('div');
+        let transacoesParaInserir = [];
+
+        linhasItens.forEach((div) => {
+            const descItem = div.querySelector('.item-desc').value;
+            const valItem = parseFloat(div.querySelector('.item-val').value);
+
+            if (valItem && valItem > 0) {
+                transacoesParaInserir.push({
+                    tipo,
+                    categoria: categoriaPadrao,
+                    descricao: `${descricaoGeral} - ${descItem}`,
+                    valor: valItem,
+                    data: dataHoje,
+                    user_id: user.id
+                });
+            }
+        });
+
+        // Se nenhum item foi preenchido com valor, utiliza o valor total geral informado
+        if (transacoesParaInserir.length === 0) {
+            transacoesParaInserir.push({
+                tipo,
+                categoria: categoriaPadrao,
+                descricao: descricaoGeral,
+                valor: parseFloat(ocrPrevTotal.value) || 0,
+                data: dataHoje,
+                user_id: user.id
+            });
+        }
 
         const { error } = await supabase10
             .from('transacoes')
-            .insert([novaTransacao]);
+            .insert(transacoesParaInserir);
 
         if (error) throw error;
 
         ocrPreviewContainer.style.display = 'none';
-        statusDiv.innerText = 'Lançamento da nota enviado com sucesso para o Supabase!';
+        statusDiv.innerText = 'Lançamentos detalhados enviados com sucesso para o Supabase!';
         ocrFileInput.value = '';
         await buscarTransacoes();
     } catch (error) {
-        alert("Erro ao subir lançamento da nota: " + error.message);
+        alert("Erro ao salvar lançamentos: " + error.message);
     }
 });
 
-// Botão Cancelar OCR: Descarta os dados da revisão
+// Botão Cancelar OCR: Descarta a leitura
 btnCancelOcr.addEventListener('click', () => {
     ocrPreviewContainer.style.display = 'none';
-    statusDiv.innerText = 'Leitura descartada. Clique em tirar foto para tentar novamente.';
+    statusDiv.innerText = 'Leitura descartada. Tire outra foto quando desejar.';
     ocrFileInput.value = '';
 });
 
