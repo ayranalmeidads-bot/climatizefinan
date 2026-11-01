@@ -1,8 +1,8 @@
 // ==========================================
 // CONFIGURAÇÃO DO SUPABASE
 // ==========================================
-const SUPABASE_URL = "SUA_URL_SUPABASE_AQUI";
-const SUPABASE_KEY = "SUA_CHAVE_ANONIMA_SUPABASE_AQUI";
+const SUPABASE_URL = "https://itkzuoqdgxkziwjkege.supabase.co";
+const SUPABASE_KEY = "sb_publishable_XRwRbPVyeDggyeYcbA0fQQ_ImSkKoi6";
 const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // Categorias específicas fornecidas pelo usuário
