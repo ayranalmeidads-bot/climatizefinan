@@ -51,7 +51,6 @@ function atualizarOpcoesCategorias() {
     });
 }
 
-// Escuta mudança de tipo (Entrada/Saída) para carregar as categorias corretas
 selectTipo.addEventListener('change', atualizarOpcoesCategorias);
 
 // ==========================================
@@ -123,7 +122,6 @@ async function initDashboard() {
     await buscarTransacoes();
 }
 
-// Buscar Transações do Usuário Logado
 async function buscarTransacoes() {
     try {
         const { data: { user } } = await supabase10.auth.getUser();
@@ -145,7 +143,6 @@ async function buscarTransacoes() {
     }
 }
 
-// Lançamento de Transações
 formTransacao.addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -182,7 +179,6 @@ formTransacao.addEventListener('submit', async (e) => {
     }
 });
 
-// Atualização dos KPI Cards
 function updateCalculos() {
     const entradas = transacoes
         .filter(t => t.tipo === 'entrada')
@@ -199,7 +195,6 @@ function updateCalculos() {
     document.getElementById('saldo-liquido').innerText = `R$ ${saldo.toFixed(2)}`;
 }
 
-// Renderizar Tabela com Botão de Excluir
 function renderTabela() {
     const tbody = document.getElementById('transacoes-list');
     tbody.innerHTML = '';
@@ -218,7 +213,6 @@ function renderTabela() {
     });
 }
 
-// Função para Deletar Transação
 async function deletarTransacao(id) {
     if (!confirm("Tens a certeza de que queres apagar este lançamento?")) return;
 
@@ -266,18 +260,21 @@ function updateChart() {
 }
 
 // ==========================================
-// MÓDULO OCR INTELIGENTE (TESSERACT.JS)
+// MÓDULO OCR INTELIGENTE (BOTÃO ÚNICO)
 // ==========================================
-document.getElementById('btn-process-ocr').addEventListener('click', () => {
-    const fileInput = document.getElementById('ocr-file-input');
+const btnTriggerOcr = document.getElementById('btn-trigger-ocr');
+const ocrFileInput = document.getElementById('ocr-file-input');
+
+btnTriggerOcr.addEventListener('click', () => {
+    ocrFileInput.click();
+});
+
+ocrFileInput.addEventListener('change', (e) => {
     const statusDiv = document.getElementById('ocr-status');
 
-    if (fileInput.files.length === 0) {
-        alert('Por favor, tire uma foto ou selecione uma imagem.');
-        return;
-    }
+    if (e.target.files.length === 0) return;
 
-    const file = fileInput.files[0];
+    const file = e.target.files[0];
     statusDiv.innerText = 'Lendo imagem e extraindo dados... Aguarde.';
 
     Tesseract.recognize(
@@ -285,9 +282,8 @@ document.getElementById('btn-process-ocr').addEventListener('click', () => {
         'por',
         { logger: m => console.log(m) }
     ).then(({ data: { text } }) => {
-        statusDiv.innerText = 'Leitura concluída! Verifique os dados abaixo.';
+        statusDiv.innerText = 'Leitura concluída! Revise e ajuste os dados no formulário abaixo.';
         
-        // Tenta extrair valores monetários do texto lido (ex: R$ 150,00 ou 150.00)
         const regexValores = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
         let match;
         let maioresValores = [];
@@ -296,20 +292,18 @@ document.getElementById('btn-process-ocr').addEventListener('click', () => {
             maioresValores.push(num);
         }
 
-        // Pega o maior valor encontrado na nota (geralmente o total)
         if (maioresValores.length > 0) {
             const maiorValor = Math.max(...maioresValores);
             document.getElementById('t-valor').value = maiorValor.toFixed(2);
         }
 
-        // Preenche a descrição com uma prévia do texto ou avisa
-        document.getElementById('t-descricao').value = "Nota Fiscal Escaneada";
+        const descricaoResumida = text.replace(/[\n\r]+/g, ' ').substring(0, 60).trim();
+        document.getElementById('t-descricao').value = descricaoResumida || "Nota Fiscal Escaneada";
         
-        // Define a data de hoje automaticamente
         const hoje = new Date().toISOString().split('T')[0];
         document.getElementById('t-data').value = hoje;
 
-        alert('Dados extraídos com sucesso! Revise os campos no formulário de "Novo Lançamento" e clique em Adicionar.');
+        alert('Dados extraídos! Revise os campos e clique em "Adicionar Lançamento".');
     }).catch(err => {
         statusDiv.innerText = 'Erro ao processar imagem.';
         console.error(err);
@@ -317,7 +311,7 @@ document.getElementById('btn-process-ocr').addEventListener('click', () => {
 });
 
 // ==========================================
-// EXPORTAÇÃO (CSV & PDF)
+// EXPORTAÇÃO (CSV & PDF COM LOGO)
 // ==========================================
 document.getElementById('btn-export-csv').addEventListener('click', () => {
     let csvContent = "data:text/csv;charset=utf-8,Data,Tipo,Categoria,Descricao,Valor\n";
@@ -334,31 +328,98 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
     document.body.removeChild(link);
 });
 
-document.getElementById('btn-export-pdf').addEventListener('click', () => {
+document.getElementById('btn-export-pdf').addEventListener('click', async () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    doc.text("Climatize - Relatório Financeiro", 10, 10);
-    let y = 20;
+    const getBase64ImageFromUrl = async (imageUrl) => {
+        const res = await fetch(imageUrl);
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    };
+
+    try {
+        const logoData = await getBase64ImageFromUrl('img/climatize.png');
+        doc.addImage(logoData, 'PNG', 14, 10, 35, 12);
+    } catch (e) {
+        console.log("Logo não encontrada, gerando PDF sem imagem.");
+    }
+
+    doc.setFontSize(16);
+    doc.setTextColor(30, 77, 84);
+    doc.text("Climatize - Relatório Financeiro", 55, 18);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 55, 24);
+
+    doc.setDrawColor(200);
+    doc.line(14, 30, 196, 30);
+
+    let y = 38;
+    doc.setFontSize(10);
+    doc.setTextColor(0);
 
     transacoes.forEach((t) => {
-        doc.text(`${t.data} - [${t.tipo.toUpperCase()}] ${t.categoria}: R$ ${t.valor.toFixed(2)} (${t.descricao || ''})`, 10, y);
-        y += 10;
+        if (y > 275) {
+            doc.addPage();
+            y = 20;
+        }
+
+        const tipoFormatado = t.tipo.toUpperCase();
+        doc.text(`${t.data} | [${tipoFormatado}] ${t.categoria} - R$ ${t.valor.toFixed(2)}`, 14, y);
+        y += 6;
+        if (t.descricao) {
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text(`Descrição: ${t.descricao}`, 14, y);
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            y += 7;
+        } else {
+            y += 4;
+        }
     });
 
     doc.save("climatize_relatorio.pdf");
 });
 
 // ==========================================
-// ALTERAÇÃO DE SENHA
+// ALTERAÇÃO DE SENHA SEGURA
 // ==========================================
 document.getElementById('btn-alterar-senha').addEventListener('click', async () => {
-    const novaSenha = prompt("Digite a sua nova senha:");
+    const senhaAntiga = prompt("Digite a sua senha atual:");
+    if (!senhaAntiga) return;
+
+    const novaSenha = prompt("Digite a nova senha:");
     if (!novaSenha) return;
 
+    const confirmaSenha = prompt("Confirme a nova senha:");
+    if (!confirmaSenha) return;
+
+    if (novaSenha !== confirmaSenha) {
+        alert("As senhas novas não coincidem. Tente novamente.");
+        return;
+    }
+
     try {
-        const { error } = await supabase10.auth.updateUser({ password: novaSenha });
-        if (error) throw error;
+        const { data: { user } } = await supabase10.auth.getUser();
+        if (!user || !user.email) throw new Error("Usuário não identificado.");
+
+        const { error: authError } = await supabase10.auth.signInWithPassword({
+            email: user.email,
+            password: senhaAntiga
+        });
+
+        if (authError) throw new Error("A senha atual está incorreta.");
+
+        const { error: updateError } = await supabase10.auth.updateUser({ password: novaSenha });
+        if (updateError) throw updateError;
+
         alert("Senha alterada com sucesso!");
     } catch (error) {
         alert("Erro ao alterar senha: " + error.message);

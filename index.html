@@ -25,6 +25,7 @@
     <section id="auth-screen" class="screen active">
         <div class="auth-card">
             <div class="logo-container">
+                <img src="img/climatize.png" alt="Climatize Logo" style="max-height: 50px; margin-bottom: 10px;">
                 <h2>Climatize</h2>
                 <p>Painel Financeiro</p>
             </div>
@@ -66,9 +67,11 @@
     <!-- ========================================== -->
     <div id="app-dashboard" class="app-container hidden">
         
-        <!-- Header com Opção de Alterar Senha e Sair -->
+        <!-- Header com Logo e Ações -->
         <header class="top-bar">
-            <h1>Climatize</h1>
+            <div class="logo-area">
+                <img src="img/climatize.png" alt="Climatize Logo" class="brand-logo">
+            </div>
             <div style="display: flex; gap: 10px;">
                 <button id="btn-alterar-senha" class="btn-logout">Alterar Senha</button>
                 <button id="btn-logout" class="btn-logout">Sair</button>
@@ -93,13 +96,13 @@
                 </div>
             </section>
 
-            <!-- Seção de Leitura OCR de Notas Fiscais (Câmera Direta) -->
+            <!-- Seção de Leitura OCR de Notas Fiscais (Botão Único e Direto) -->
             <section class="card-section">
                 <h3>Escanear Nota Fiscal (OCR)</h3>
                 <div class="ocr-box">
-                    <input type="file" id="ocr-file-input" accept="image/*" capture="environment">
-                    <button id="btn-process-ocr" class="btn-secondary">Tirar Foto / Carregar e Preencher</button>
-                    <div id="ocr-status" class="ocr-status">Aguardando arquivo...</div>
+                    <input type="file" id="ocr-file-input" accept="image/*" capture="environment" style="display: none;">
+                    <button type="button" id="btn-trigger-ocr" class="btn-secondary">📸 Tirar Foto ou Escolher Nota Fiscal</button>
+                    <div id="ocr-status" class="ocr-status">Clique no botão acima para escanear. Os dados preencherão o formulário abaixo automaticamente para revisão.</div>
                 </div>
             </section>
 
