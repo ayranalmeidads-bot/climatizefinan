@@ -8,23 +8,10 @@ const supabase10 = window.supabase ? window.supabase.createClient(SUPABASE_URL, 
 // Categorias específicas fornecidas pelo usuário
 const CATEGORIAS = {
     entrada: [
-        "Instalação",
-        "Higienização",
-        "Manutenção corretiva",
-        "Infraestrutura",
-        "Desinstalação"
+        "Instalação", "Higienização", "Manutenção corretiva", "Infraestrutura", "Desinstalação"
     ],
     saida: [
-        "Tubulação",
-        "Suporte",
-        "Kit instalação",
-        "Fita PVC",
-        "Aluminizada",
-        "Fita isolante",
-        "Silver tape",
-        "Ferramenta",
-        "Gasolina",
-        "Ajudante"
+        "Tubulação", "Suporte", "Kit instalação", "Fita PVC", "Aluminizada", "Fita isolante", "Silver tape", "Ferramenta", "Gasolina", "Ajudante"
     ]
 };
 
@@ -84,21 +71,45 @@ linkGoLogin.addEventListener('click', (e) => {
 
 formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
-    // Exemplo de login liberando o dashboard
-    screenAuth.classList.add('hidden');
-    appDashboard.classList.remove('hidden');
-    initDashboard();
+    const email = document.getElementById('login-email').value;
+    const senha = document.getElementById('login-senha').value;
+
+    try {
+        const { error } = await supabase10.auth.signInWithPassword({ email, password: senha });
+        if (error) throw error;
+
+        screenAuth.classList.add('hidden');
+        appDashboard.classList.remove('hidden');
+        initDashboard();
+    } catch (error) {
+        alert("Erro no login: " + error.message);
+    }
 });
 
 formRegister.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nome = document.getElementById('reg-nome').value;
-    alert(`Usuário ${nome} registrado com sucesso! Faça seu login.`);
-    formRegister.classList.remove('active');
-    formLogin.classList.add('active');
+    const email = document.getElementById('reg-email').value;
+    const senha = document.getElementById('reg-senha').value;
+
+    try {
+        const { error } = await supabase10.auth.signUp({ 
+            email, 
+            password: senha,
+            options: { data: { nome: nome } }
+        });
+        if (error) throw error;
+
+        alert(`Usuário ${nome} registrado com sucesso! Faça seu login.`);
+        formRegister.classList.remove('active');
+        formLogin.classList.add('active');
+    } catch (error) {
+        alert("Erro no cadastro: " + error.message);
+    }
 });
 
-btnLogout.addEventListener('click', () => {
+btnLogout.addEventListener('click', async () => {
+    await supabase10.auth.signOut();
     appDashboard.classList.add('hidden');
     screenAuth.classList.remove('hidden');
 });
@@ -106,38 +117,69 @@ btnLogout.addEventListener('click', () => {
 // ==========================================
 // MÓDULO FINANCEIRO (DASHBOARD)
 // ==========================================
-function initDashboard() {
+async function initDashboard() {
     atualizarOpcoesCategorias();
     renderChart();
-    updateCalculos();
+    await buscarTransacoes();
+}
+
+// Buscar Transações do Usuário Logado
+async function buscarTransacoes() {
+    try {
+        const { data: { user } } = await supabase10.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase10
+            .from('transacoes')
+            .select('*')
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        transacoes = data;
+        updateCalculos();
+        renderTabela();
+        updateChart();
+    } catch (error) {
+        console.error("Erro ao buscar transações:", error.message);
+    }
 }
 
 // Lançamento de Transações
-formTransacao.addEventListener('submit', (e) => {
+formTransacao.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const tipo = selectTipo.value;
-    const categoria = selectCategoria.value;
-    const descricao = document.getElementById('t-descricao').value;
-    const valor = parseFloat(document.getElementById('t-valor').value);
-    const data = document.getElementById('t-data').value;
+    try {
+        const { data: { user } } = await supabase10.auth.getUser();
+        if (!user) throw new Error("Usuário não autenticado");
 
-    const novaTransacao = { 
-        id: Date.now(), 
-        tipo, 
-        categoria, 
-        descricao, 
-        valor, 
-        data 
-    };
+        const tipo = selectTipo.value;
+        const categoria = selectCategoria.value;
+        const descricao = document.getElementById('t-descricao').value;
+        const valor = parseFloat(document.getElementById('t-valor').value);
+        const data = document.getElementById('t-data').value;
 
-    transacoes.push(novaTransacao);
+        const novaTransacao = { 
+            tipo, 
+            categoria, 
+            descricao, 
+            valor, 
+            data,
+            user_id: user.id 
+        };
 
-    formTransacao.reset();
-    atualizarOpcoesCategorias();
-    updateCalculos();
-    renderTabela();
-    updateChart();
+        const { error } = await supabase10
+            .from('transacoes')
+            .insert([novaTransacao]);
+
+        if (error) throw error;
+
+        formTransacao.reset();
+        atualizarOpcoesCategorias();
+        await buscarTransacoes();
+    } catch (error) {
+        alert("Erro ao salvar transação: " + error.message);
+    }
 });
 
 // Atualização dos KPI Cards
