@@ -210,6 +210,9 @@ function renderTabela() {
     });
 }
 
+// ==========================================
+// FUNÇÃO DE EXCLUSÃO CORRIGIDA
+// ==========================================
 async function deletarTransacao(id) {
     if (!confirm("Tem certeza de que deseja apagar este lançamento?")) return;
 
@@ -217,12 +220,14 @@ async function deletarTransacao(id) {
         const { error } = await supabase10
             .from('transacoes')
             .delete()
-            .eq('id', id);
+            .match({ id: id }); // Utiliza match para garantir a correspondência exata do ID
 
         if (error) throw error;
+
         await buscarTransacoes();
     } catch (error) {
-        alert("Erro ao apagar transação: " + error.message);
+        console.error("Erro ao apagar transação:", error.message);
+        alert("Erro ao apagar transação: Verifique as permissões (RLS) no Supabase para a tabela transacoes.");
     }
 }
 
@@ -311,7 +316,6 @@ ocrFileInput.addEventListener('change', async (e) => {
 
         statusDiv.innerText = 'Leitura concluída! Revise e ajuste os itens e valores abaixo.';
 
-        // Quebra o texto por linhas para isolar itens e valores associados
         const linhas = parsedText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
         let itensEncontrados = [];
         let valoresExtraidos = [];
@@ -326,7 +330,6 @@ ocrFileInput.addEventListener('change', async (e) => {
                 valoresExtraidos.push(valNum);
                 achouValorNaLinha = true;
             }
-            // Filtra linhas úteis que parecem itens de compra
             if (linha.length > 3 && !/total|cnpj|cpf|data|rua|fone|caixa|operador|dinheiro|troco/i.test(linha)) {
                 itensEncontrados.push({ 
                     texto: linha, 
@@ -335,7 +338,6 @@ ocrFileInput.addEventListener('change', async (e) => {
             }
         });
 
-        // Define o total geral estimado
         if (valoresExtraidos.length > 0) {
             ocrPrevTotal.value = Math.max(...valoresExtraidos).toFixed(2);
         } else {
@@ -343,9 +345,8 @@ ocrFileInput.addEventListener('change', async (e) => {
         }
 
         ocrPrevDesc.value = itensEncontrados[0]?.texto || "Nota Fiscal Escaneada";
-        ocrPrevTipo.value = 'saida'; // Padrão para compras de materiais
+        ocrPrevTipo.value = 'saida';
 
-        // Renderiza dinamicamente cada item na tela de confirmação
         ocrItensList.innerHTML = '';
         if (itensEncontrados.length === 0) {
             itensEncontrados.push({ texto: "Item geral da nota", valor: ocrPrevTotal.value });
@@ -362,7 +363,6 @@ ocrFileInput.addEventListener('change', async (e) => {
             ocrItensList.appendChild(divItem);
         });
 
-        // Exibe o painel intermediário de revisão detalhada
         ocrPreviewContainer.style.display = 'block';
 
     } catch (err) {
@@ -372,7 +372,6 @@ ocrFileInput.addEventListener('change', async (e) => {
     }
 });
 
-// Botão Confirmar OCR: Salva os itens revisados diretamente no Supabase
 btnConfirmOcr.addEventListener('click', async () => {
     try {
         const { data: { user } } = await supabase10.auth.getUser();
@@ -402,7 +401,6 @@ btnConfirmOcr.addEventListener('click', async () => {
             }
         });
 
-        // Se nenhum item foi preenchido com valor, utiliza o valor total geral informado
         if (transacoesParaInserir.length === 0) {
             transacoesParaInserir.push({
                 tipo,
@@ -429,7 +427,6 @@ btnConfirmOcr.addEventListener('click', async () => {
     }
 });
 
-// Botão Cancelar OCR: Descarta a leitura
 btnCancelOcr.addEventListener('click', () => {
     ocrPreviewContainer.style.display = 'none';
     statusDiv.innerText = 'Leitura descartada. Tire outra foto quando desejar.';
