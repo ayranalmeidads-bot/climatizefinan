@@ -1,0 +1,23 @@
+{
+  "short_name": "Climatize",
+  "name": "Climatize - Painel Financeiro",
+  "icons": [
+    {
+      "src": "climatize.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "climatize.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#122a2e",
+  "theme_color": "#1e4d54",
+  "display": "standalone",
+  "orientation": "portrait"
+}
