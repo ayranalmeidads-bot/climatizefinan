@@ -7,8 +7,8 @@ const supabase10 = window.supabase ? window.supabase.createClient(SUPABASE_URL, 
 
 // Categorias específicas fornecidas pelo usuário
 const CATEGORIAS = {
-    entrada: ["Instalação", "Higienização", "Manutenção corretiva", "Infraestrutura", "Desinstalação"],
-    saida: ["Tubulação", "Suporte", "Kit instalação", "Fita PVC", "Aluminizada", "Fita isolante", "Silver tape", "Ferramenta", "Gasolina", "Ajudante", "Saque Pessoal"]
+    entrada: ["Instalação", "Higienização", "Manutenção corretiva", "Infraestrutura", "Desinstalação", "Reoperação"],
+    saida: ["Tubulação", "Suporte", "Kit instalação", "Fita PVC", "Aluminizada", "Fita isolante", "Frete", "Silver tape", "Ferramenta", "Gasolina", "Ajudante","Frete", "Gás refrigerante", "Saque Pessoal"]
 };
 
 // Estado da Aplicação
