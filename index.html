@@ -5,10 +5,11 @@
 <script>(function(){try{var saved=localStorage.getItem("climatize_theme_v21");document.documentElement.dataset.theme=saved==="dark"||saved==="light"?saved:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");}catch(e){document.documentElement.dataset.theme="light"}})();</script><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Climatize · Gestão Inteligente</title>
+<meta name="climatize-build" content="2.3-20261114"/>
 <!-- CSS Principal -->
-<link href="ui-v21.css?v=20261114.2" rel="stylesheet"/>
+<link href="ui-v23.css?v=20261114.2301" rel="stylesheet"/>
 <!-- PWA Manifest -->
-<link href="manifest.json" rel="manifest"/>
+<link href="manifest.json?v=20261114.22" rel="manifest"/>
 <!-- Chart.js para Gráficos -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- Supabase JS Client -->
@@ -18,7 +19,9 @@
 <!-- Manifest já declarado acima -->
 <!-- Configurações adicionais para aparecer o ícone no Android/Chrome e iOS -->
 <meta content="#0f3539" id="theme-meta" name="theme-color"/>
-<link href="icon-192.png" rel="apple-touch-icon"/>
+<link href="icon-192-v22.png" rel="icon" sizes="192x192" type="image/png"/>
+<link href="icon-512-v22.png" rel="icon" sizes="512x512" type="image/png"/>
+<link href="apple-touch-icon-v22.png" rel="apple-touch-icon" sizes="180x180"/>
 <meta content="light dark" name="color-scheme"/><meta content="Climatize — Controle financeiro, agenda e orçamentos em um único lugar." name="description"/></head>
 <body>
 <!-- ========================================== -->
@@ -66,7 +69,7 @@
 <!-- Header com Logo e Ações -->
 <header class="top-bar"><div class="top-inner">
 <div class="brand-lockup"><div class="logo-area"><img alt="Climatize Ar-Condicionado" class="brand-logo climatize-logo-img" src="climatize.png"/></div><div class="brand-caption"><strong>Climatize</strong><span>Gestão de serviços</span></div></div>
-<div class="header-actions"><button aria-label="Alternar tema" aria-pressed="false" class="theme-toggle" id="btn-theme" type="button"><span aria-hidden="true" class="theme-icon">☾</span><span class="theme-label">Modo escuro</span></button><button class="btn-logout btn-settings" id="btn-alterar-senha" type="button"><span aria-hidden="true">⚙</span><span class="action-label">Alterar senha</span></button><button class="btn-logout btn-exit" id="btn-logout" type="button"><span aria-hidden="true">↪</span><span class="action-label">Sair</span></button></div>
+<div class="header-actions"><button aria-label="Alternar tema" aria-pressed="false" class="theme-toggle" id="btn-theme" type="button"><span aria-hidden="true" class="theme-icon">☾</span><span class="theme-label">Modo escuro</span></button><button class="btn-logout btn-settings" id="btn-alterar-senha" type="button" title="Alterar senha" aria-label="Alterar senha"><span aria-hidden="true" class="header-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2"/></svg></span><span class="action-label">Alterar senha</span></button><button class="btn-logout btn-exit" id="btn-logout" type="button"><span aria-hidden="true">↪</span><span class="action-label">Sair</span></button></div>
 </div></header>
 <nav aria-label="Navegação principal" class="module-nav" role="tablist">
 <button aria-controls="modulo-financeiro" aria-selected="true" class="module-tab is-active" data-modulo="financeiro" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="18" rx="3" width="18" x="3" y="3"></rect><path d="M3 9h18M9 21V9M13 14h4"></path></svg><span>Financeiro</span></button>
@@ -232,9 +235,11 @@
 <details class="revision-panel" id="orc-revisoes-wrap"><summary>Histórico de alterações do orçamento</summary><div class="item-stack" id="orc-revisoes"></div></details>
 </section>
 </main>
+<footer class="cl-copyright" aria-label="Direitos autorais">© 2026 ayrandev</footer>
 </div>
 <!-- Script Principal JS -->
-<script src="app.js?v=20261114.2"></script>
-<script src="modulos.js?v=20261114.2"></script>
-<script src="ui-v21.js?v=20261114.2"></script></body>
+<script src="dialogos-v23.js?v=20261114.2301"></script>
+<script src="financeiro-v23.js?v=20261114.2301"></script>
+<script src="modulos-v23.js?v=20261114.2301"></script>
+<script src="interface-v23.js?v=20261114.2301"></script></body>
 </html>

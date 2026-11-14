@@ -3,16 +3,22 @@
   "name": "Climatize 2.0 — Gestão e Orçamentos",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "icon-192-v22.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512-v22.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-v22.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "start_url": "./index.html",

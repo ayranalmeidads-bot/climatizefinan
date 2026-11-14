@@ -1,0 +1,566 @@
+// ==========================================
+// CONFIGURAÇÃO DO SUPABASE
+// ==========================================
+const SUPABASE_URL = "https://ditkzuoqdgxkziwjkege.supabase.co";
+const SUPABASE_KEY = "sb_publishable_XRwRbPVyeDggyeYcbA0fQQ_ImSkKoi6";
+const supabase10 = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// Categorias específicas fornecidas pelo usuário
+const CATEGORIAS = {
+    entrada: ["Instalação", "Higienização", "Manutenção corretiva", "Infraestrutura", "Desinstalação", "Reoperação"],
+    saida: ["Tubulação", "Suporte", "Kit instalação", "Fita PVC", "Aluminizada", "Fita isolante", "Frete", "Silver tape", "Ferramenta", "Gasolina", "Ajudante","Frete", "Gás refrigerante", "Saque Pessoal"]
+};
+
+// Estado da Aplicação
+let transacoes = [];
+let chartInstance = null;
+
+// ==========================================
+// SELETORES DOM
+// ==========================================
+const screenAuth = document.getElementById('auth-screen');
+const appDashboard = document.getElementById('app-dashboard');
+const formLogin = document.getElementById('form-login');
+const formRegister = document.getElementById('form-register');
+const formTransacao = document.getElementById('form-transacao');
+
+const selectTipo = document.getElementById('t-tipo');
+const selectCategoria = document.getElementById('t-categoria');
+
+const linkGoRegister = document.getElementById('go-to-register');
+const linkGoLogin = document.getElementById('go-to-login');
+const btnLogout = document.getElementById('btn-logout');
+
+// ==========================================
+// ATUALIZAÇÃO DINÂMICA DE CATEGORIAS
+// ==========================================
+function atualizarOpcoesCategorias() {
+    const tipo = selectTipo.value;
+    const lista = CATEGORIAS[tipo] || [];
+    
+    selectCategoria.innerHTML = '';
+    lista.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        selectCategoria.appendChild(opt);
+    });
+}
+
+selectTipo.addEventListener('change', atualizarOpcoesCategorias);
+
+// ==========================================
+// AUTENTICAÇÃO E FLUXO DE TELAS
+// ==========================================
+linkGoRegister.addEventListener('click', (e) => {
+    e.preventDefault();
+    formLogin.classList.remove('active');
+    formRegister.classList.add('active');
+});
+
+linkGoLogin.addEventListener('click', (e) => {
+    e.preventDefault();
+    formRegister.classList.remove('active');
+    formLogin.classList.add('active');
+});
+
+formLogin.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const senha = document.getElementById('login-senha').value;
+
+    try {
+        const { error } = await supabase10.auth.signInWithPassword({ email, password: senha });
+        if (error) throw error;
+
+        screenAuth.classList.add('hidden');
+        appDashboard.classList.remove('hidden');
+        initDashboard();
+    } catch (error) {
+        const mensagem = /invalid login credentials|invalid credentials|email or password/i.test(error?.message || '')
+            ? 'E-mail ou senha incorretos. Confira seus dados e tente novamente.'
+            : /email not confirmed/i.test(error?.message || '')
+              ? 'Seu e-mail ainda não foi confirmado. Confira sua caixa de entrada.'
+              : 'Não foi possível entrar: ' + (error?.message || 'tente novamente.');
+        ClimatizeDialog.alert(mensagem, {titulo:'Acesso não autorizado', modo:'lock'});
+    }
+});
+
+formRegister.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById('reg-nome').value;
+    const email = document.getElementById('reg-email').value;
+    const senha = document.getElementById('reg-senha').value;
+
+    try {
+        const { error } = await supabase10.auth.signUp({ 
+            email, 
+            password: senha,
+            options: { data: { nome: nome } }
+        });
+        if (error) throw error;
+
+        ClimatizeDialog.alert(`Usuário ${nome} registrado com sucesso! Faça seu login.`);
+        formRegister.classList.remove('active');
+        formLogin.classList.add('active');
+    } catch (error) {
+        ClimatizeDialog.alert("Erro no cadastro: " + error.message);
+    }
+});
+
+btnLogout.addEventListener('click', async () => {
+    await supabase10.auth.signOut();
+    appDashboard.classList.add('hidden');
+    screenAuth.classList.remove('hidden');
+});
+
+// ==========================================
+// MÓDULO FINANCEIRO (DASHBOARD)
+// ==========================================
+async function initDashboard() {
+    atualizarOpcoesCategorias();
+    renderChart();
+    await buscarTransacoes();
+}
+
+async function buscarTransacoes() {
+    try {
+        const { data: { user } } = await supabase10.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase10
+            .from('transacoes')
+            .select('*')
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        transacoes = data;
+        updateCalculos();
+        renderTabela();
+        updateChart();
+    } catch (error) {
+        console.error("Erro ao buscar transações:", error.message);
+    }
+}
+
+formTransacao.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    try {
+        const { data: { user } } = await supabase10.auth.getUser();
+        if (!user) throw new Error("Usuário não autenticado");
+
+        const tipo = selectTipo.value;
+        const categoria = selectCategoria.value;
+        const descricao = document.getElementById('t-descricao').value;
+        const valor = parseFloat(document.getElementById('t-valor').value);
+        const data = document.getElementById('t-data').value;
+
+        const novaTransacao = { 
+            tipo, 
+            categoria, 
+            descricao, 
+            valor, 
+            data,
+            user_id: user.id 
+        };
+
+        const { error } = await supabase10
+            .from('transacoes')
+            .insert([novaTransacao]);
+
+        if (error) throw error;
+
+        formTransacao.reset();
+        atualizarOpcoesCategorias();
+        await buscarTransacoes();
+        ClimatizeDialog.alert("Lançamento adicionado com sucesso!");
+    } catch (error) {
+        ClimatizeDialog.alert("Erro ao salvar transação: " + error.message);
+    }
+});
+
+function updateCalculos() {
+    const entradas = transacoes
+        .filter(t => t.tipo === 'entrada')
+        .reduce((acc, t) => acc + t.valor, 0);
+
+    const saidas = transacoes
+        .filter(t => t.tipo === 'saida')
+        .reduce((acc, t) => acc + t.valor, 0);
+
+    const saldo = entradas - saidas;
+
+    document.getElementById('total-entradas').innerText = entradas.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
+    document.getElementById('total-saidas').innerText = saidas.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
+    document.getElementById('saldo-liquido').innerText = saldo.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
+}
+
+function renderTabela() {
+    const tbody = document.getElementById('transacoes-list');
+    tbody.replaceChildren();
+    transacoes.forEach(t => {
+        const tr = document.createElement('tr');
+        const cell = (valor) => {const td=document.createElement('td');td.textContent=String(valor ?? '');tr.appendChild(td);return td;};
+        cell(t.data);
+        const tipo = cell(String(t.tipo || '').toUpperCase());
+        tipo.style.color = t.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)';
+        cell(t.categoria);cell(t.descricao || '-');cell(Number(t.valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}));
+        const acao = document.createElement('td');
+        const botao = document.createElement('button');botao.textContent='Excluir';
+        botao.className='btn-row-danger';
+        botao.addEventListener('click',()=>deletarTransacao(t.id));
+        acao.appendChild(botao);tr.appendChild(acao);tbody.appendChild(tr);
+    });
+}
+
+// ==========================================
+// FUNÇÃO DE EXCLUSÃO CORRIGIDA
+// ==========================================
+async function deletarTransacao(id) {
+    // Registros originados dos orçamentos V2 são conciliados: não excluir isoladamente.
+    try {
+        const {data:pagos, error:pgErr} = await supabase10.from('climatize_recebimentos_v2').select('id').eq('transacao_id',String(id)).limit(1);
+        if (!pgErr && pagos?.length) {ClimatizeDialog.alert('Este lançamento veio de um orçamento. Para preservar a conciliação, não é possível excluí-lo isoladamente.');return;}
+        if (pgErr && pgErr.code !== '42P01' && pgErr.code !== 'PGRST205') { throw pgErr; }
+    } catch (err) {ClimatizeDialog.alert('Não foi possível verificar a vinculação do lançamento. Exclusão cancelada por segurança.');return;}
+    if (!await ClimatizeDialog.confirm("Tem certeza de que deseja apagar este lançamento?")) return;
+
+    try {
+        const { error } = await supabase10
+            .from('transacoes')
+            .delete()
+            .match({ id: id }); // Utiliza match para garantir a correspondência exata do ID
+
+        if (error) throw error;
+
+        await buscarTransacoes();
+    } catch (error) {
+        console.error("Erro ao apagar transação:", error.message);
+        ClimatizeDialog.alert("Erro ao apagar transação: Verifique as permissões (RLS) no Supabase para a tabela transacoes.");
+    }
+}
+
+// ==========================================
+// GRÁFICOS (CHART.JS)
+// ==========================================
+function renderChart() {
+    // Evita "Canvas is already in use" ao restaurar a sessão ou fazer novo login.
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    const ctx = document.getElementById('financeChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Entradas', 'Saídas'],
+            datasets: [{
+                label: 'Total (R$)',
+                data: [0, 0],
+                backgroundColor: ['#19a58e', '#e46b78'],
+                borderRadius: 9,
+                borderSkipped: false,
+                maxBarThickness: 85
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {legend: {display: false}, tooltip: {callbacks: {label: (ctx) => Number(ctx.parsed.y || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}}},
+            scales: {x: {grid: {display:false}, ticks:{color: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#617b81',font:{size:13,weight:600}}}, y: {beginAtZero:true,grid:{color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || '#e7eff0'},ticks:{color: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#617b81',callback:(v)=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',notation:'compact'})}, border:{display:false}}}
+        }
+    });
+}
+
+function updateChart() {
+    const entradas = transacoes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+    const saidas = transacoes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+
+    if (!chartInstance) return;
+    chartInstance.data.datasets[0].data = [entradas, saidas];
+    chartInstance.update();
+}
+
+// ==========================================
+// MÓDULO OCR DETALHADO POR ITENS (NUVEM OCR.SPACE)
+// ==========================================
+const btnTriggerCamera = document.getElementById('btn-trigger-camera');
+const btnTriggerGallery = document.getElementById('btn-trigger-gallery');
+const ocrFileInput = document.getElementById('ocr-file-input');
+const ocrPreviewContainer = document.getElementById('ocr-preview-container');
+const ocrPrevTipo = document.getElementById('ocr-prev-tipo');
+const ocrPrevTotal = document.getElementById('ocr-prev-total');
+const ocrPrevDesc = document.getElementById('ocr-prev-desc');
+const ocrItensList = document.getElementById('ocr-itens-list');
+const btnConfirmOcr = document.getElementById('btn-confirm-ocr');
+const btnCancelOcr = document.getElementById('btn-cancel-ocr');
+const statusDiv = document.getElementById('ocr-status');
+
+btnTriggerCamera.addEventListener('click', () => {
+    ocrFileInput.setAttribute('capture', 'environment');
+    ocrFileInput.click();
+});
+
+btnTriggerGallery.addEventListener('click', () => {
+    ocrFileInput.removeAttribute('capture');
+    ocrFileInput.click();
+});
+
+ocrFileInput.addEventListener('change', async (e) => {
+    if (e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    statusDiv.innerText = 'Enviando imagem para análise detalhada na nuvem (OCR.space)... Aguarde.';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('apikey', 'helloworld');
+    formData.append('language', 'por');
+    formData.append('isOverlayRequired', 'false');
+
+    try {
+        const response = await fetch('https://api.ocr.space/parse/image', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        
+        if (result.IsErroredOnProcessing) {
+            throw new Error(result.ErrorMessage || 'Erro ao processar OCR.');
+        }
+
+        const parsedText = result.ParsedResults && result.ParsedResults.length > 0 
+            ? result.ParsedResults[0].ParsedText 
+            : '';
+
+        statusDiv.innerText = 'Leitura concluída! Revise e ajuste os itens e valores abaixo.';
+
+        const linhas = parsedText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        let itensEncontrados = [];
+        let valoresExtraidos = [];
+
+        const regexValor = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
+
+        linhas.forEach((linha) => {
+            let match;
+            let achouValorNaLinha = false;
+            while ((match = regexValor.exec(linha)) !== null) {
+                let valNum = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+                valoresExtraidos.push(valNum);
+                achouValorNaLinha = true;
+            }
+            if (linha.length > 3 && !/total|cnpj|cpf|data|rua|fone|caixa|operador|dinheiro|troco/i.test(linha)) {
+                itensEncontrados.push({ 
+                    texto: linha, 
+                    valor: achouValorNaLinha ? valoresExtraidos[valoresExtraidos.length - 1] || 0 : 0 
+                });
+            }
+        });
+
+        if (valoresExtraidos.length > 0) {
+            ocrPrevTotal.value = Math.max(...valoresExtraidos).toFixed(2);
+        } else {
+            ocrPrevTotal.value = '0.00';
+        }
+
+        ocrPrevDesc.value = itensEncontrados[0]?.texto || "Nota Fiscal Escaneada";
+        ocrPrevTipo.value = 'saida';
+
+        ocrItensList.innerHTML = '';
+        if (itensEncontrados.length === 0) {
+            itensEncontrados.push({ texto: "Item geral da nota", valor: ocrPrevTotal.value });
+        }
+
+        itensEncontrados.forEach((item, index) => {
+            const divItem = document.createElement('div');
+            divItem.style.cssText = "display: flex; gap: 8px; align-items: center;";
+            // OCR é dado externo: construir elementos sem interpolar HTML.
+            const labelItem = document.createElement('span');
+            labelItem.style.cssText = 'font-size:0.8rem;font-weight:bold;min-width:45px;';
+            labelItem.textContent = `Item ${index + 1}:`;
+            const descInput = document.createElement('input');
+            descInput.type = 'text'; descInput.className = 'item-desc'; descInput.value = item.texto;
+            descInput.style.cssText = 'flex:2;min-width:150px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;';
+            const valorInput = document.createElement('input');
+            valorInput.type = 'number'; valorInput.step = '0.01'; valorInput.className = 'item-val';
+            valorInput.value = item.valor || ''; valorInput.placeholder = 'Valor R$';
+            valorInput.style.cssText = 'flex:1;min-width:100px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;';
+            divItem.append(labelItem, descInput, valorInput);
+            ocrItensList.appendChild(divItem);
+        });
+
+        ocrPreviewContainer.style.display = 'block';
+
+    } catch (err) {
+        statusDiv.innerText = 'Erro ao processar imagem.';
+        console.error(err);
+        ClimatizeDialog.alert("Erro no OCR: " + err.message);
+    }
+});
+
+btnConfirmOcr.addEventListener('click', async () => {
+    try {
+        const { data: { user } } = await supabase10.auth.getUser();
+        if (!user) throw new Error("Usuário não autenticado");
+
+        const tipo = ocrPrevTipo.value;
+        const descricaoGeral = ocrPrevDesc.value;
+        const dataHoje = new Date().toISOString().split('T')[0];
+        const categoriaPadrao = CATEGORIAS[tipo][0];
+
+        const linhasItens = ocrItensList.querySelectorAll('div');
+        let transacoesParaInserir = [];
+
+        linhasItens.forEach((div) => {
+            const descItem = div.querySelector('.item-desc').value;
+            const valItem = parseFloat(div.querySelector('.item-val').value);
+
+            if (valItem && valItem > 0) {
+                transacoesParaInserir.push({
+                    tipo,
+                    categoria: categoriaPadrao,
+                    descricao: `${descricaoGeral} - ${descItem}`,
+                    valor: valItem,
+                    data: dataHoje,
+                    user_id: user.id
+                });
+            }
+        });
+
+        if (transacoesParaInserir.length === 0) {
+            transacoesParaInserir.push({
+                tipo,
+                categoria: categoriaPadrao,
+                descricao: descricaoGeral,
+                valor: parseFloat(ocrPrevTotal.value) || 0,
+                data: dataHoje,
+                user_id: user.id
+            });
+        }
+
+        const { error } = await supabase10
+            .from('transacoes')
+            .insert(transacoesParaInserir);
+
+        if (error) throw error;
+
+        ocrPreviewContainer.style.display = 'none';
+        statusDiv.innerText = 'Lançamentos detalhados enviados com sucesso para o Supabase!';
+        ocrFileInput.value = '';
+        await buscarTransacoes();
+    } catch (error) {
+        ClimatizeDialog.alert("Erro ao salvar lançamentos: " + error.message);
+    }
+});
+
+btnCancelOcr.addEventListener('click', () => {
+    ocrPreviewContainer.style.display = 'none';
+    statusDiv.innerText = 'Leitura descartada. Tire outra foto quando desejar.';
+    ocrFileInput.value = '';
+});
+
+// ==========================================
+// EXPORTAÇÃO (CSV & PDF COM LOGO NA RAIZ)
+// ==========================================
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+    // RFC 4180: aspas e quebras de linha escapadas; neutraliza fórmulas de planilhas.
+    const celula = (v) => {
+        let x = String(v ?? '');
+        if (/^[\s]*[=+@\-\t\r]/.test(x)) x = "'" + x;
+        return '"' + x.replace(/"/g, '""') + '"';
+    };
+    const linhas = [['Data','Tipo','Categoria','Descricao','Valor']];
+    transacoes.forEach(t => linhas.push([t.data,t.tipo,t.categoria,t.descricao || '',t.valor]));
+    const blob = new Blob(['\uFEFF' + linhas.map(l => l.map(celula).join(';')).join('\r\n')], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='climatize_relatorio.csv';a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+document.getElementById('btn-export-pdf').addEventListener('click', async () => {
+    if (!window.jspdf?.jsPDF) {
+        await ClimatizeDialog.alert('Biblioteca de PDF indisponível. Verifique sua conexão e tente novamente.', { titulo: 'Não foi possível gerar o PDF', modo: 'danger' });
+        return;
+    }
+    const nomePdf = await ClimatizeDialog.askPdfName(`Climatize_Relatorio_Financeiro_${new Date().toLocaleDateString('sv-SE')}`);
+    if (!nomePdf) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const getBase64ImageFromUrl = async (imageUrl) => {
+        const res = await fetch(imageUrl);
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    };
+
+    try {
+        const logoData = await getBase64ImageFromUrl('climatize.png');
+        doc.addImage(logoData, 'PNG', 14, 10, 35, 12);
+    } catch (e) {
+        console.log("Logo não encontrada na raiz, gerando PDF sem imagem.");
+    }
+
+    doc.setFontSize(16);
+    doc.setTextColor(30, 77, 84);
+    doc.text("Climatize - Relatório Financeiro", 55, 18);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 55, 24);
+
+    doc.setDrawColor(200);
+    doc.line(14, 30, 196, 30);
+
+    let y = 38;
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+
+    transacoes.forEach((t) => {
+        if (y > 275) {
+            doc.addPage();
+            y = 20;
+        }
+
+        const tipoFormatado = t.tipo.toUpperCase();
+        doc.text(`${t.data} | [${tipoFormatado}] ${t.categoria} - R$ ${t.valor.toFixed(2)}`, 14, y);
+        y += 6;
+        if (t.descricao) {
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text(`Descrição: ${t.descricao}`, 14, y);
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            y += 7;
+        } else {
+            y += 4;
+        }
+    });
+
+    doc.save(nomePdf);
+});
+
+// ==========================================
+// ALTERAÇÃO DE SENHA SEGURA
+// ==========================================
+document.getElementById('btn-alterar-senha').addEventListener('click', async () => {
+    const dados = await ClimatizeDialog.changePassword();
+    if (!dados) return;
+    try {
+        const { data: { user } } = await supabase10.auth.getUser();
+        if (!user || !user.email) throw new Error('Usuário não identificado.');
+        const { error: authError } = await supabase10.auth.signInWithPassword({
+            email: user.email,
+            password: dados.atual
+        });
+        if (authError) throw new Error('A senha atual está incorreta.');
+        const { error: updateError } = await supabase10.auth.updateUser({ password: dados.nova });
+        if (updateError) throw updateError;
+        await ClimatizeDialog.alert('Senha alterada com sucesso!', { titulo:'Senha atualizada', modo:'lock' });
+    } catch (error) {
+        await ClimatizeDialog.alert('Erro ao alterar senha: ' + error.message, { titulo:'Não foi possível alterar a senha', modo:'danger' });
+    }
+});
