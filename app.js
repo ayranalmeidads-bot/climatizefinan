@@ -187,9 +187,9 @@ function updateCalculos() {
 
     const saldo = entradas - saidas;
 
-    document.getElementById('total-entradas').innerText = `R$ ${entradas.toFixed(2)}`;
-    document.getElementById('total-saidas').innerText = `R$ ${saidas.toFixed(2)}`;
-    document.getElementById('saldo-liquido').innerText = `R$ ${saldo.toFixed(2)}`;
+    document.getElementById('total-entradas').innerText = entradas.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
+    document.getElementById('total-saidas').innerText = saidas.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
+    document.getElementById('saldo-liquido').innerText = saldo.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
 }
 
 function renderTabela() {
@@ -201,10 +201,10 @@ function renderTabela() {
         cell(t.data);
         const tipo = cell(String(t.tipo || '').toUpperCase());
         tipo.style.color = t.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)';
-        cell(t.categoria);cell(t.descricao || '-');cell('R$ ' + Number(t.valor).toFixed(2));
+        cell(t.categoria);cell(t.descricao || '-');cell(Number(t.valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}));
         const acao = document.createElement('td');
         const botao = document.createElement('button');botao.textContent='Excluir';
-        botao.style.cssText='background:var(--danger);color:#fff;border:0;padding:6px 9px;border-radius:6px;cursor:pointer;';
+        botao.className='btn-row-danger';
         botao.addEventListener('click',()=>deletarTransacao(t.id));
         acao.appendChild(botao);tr.appendChild(acao);tbody.appendChild(tr);
     });
@@ -251,12 +251,17 @@ function renderChart() {
             datasets: [{
                 label: 'Total (R$)',
                 data: [0, 0],
-                backgroundColor: ['var(--success)', 'var(--danger)']
+                backgroundColor: ['#19a58e', '#e46b78'],
+                borderRadius: 9,
+                borderSkipped: false,
+                maxBarThickness: 85
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            plugins: {legend: {display: false}, tooltip: {callbacks: {label: (ctx) => Number(ctx.parsed.y || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}}},
+            scales: {x: {grid: {display:false}, ticks:{color: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#617b81',font:{size:13,weight:600}}}, y: {beginAtZero:true,grid:{color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || '#e7eff0'},ticks:{color: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#617b81',callback:(v)=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',notation:'compact'})}, border:{display:false}}}
         }
     });
 }
@@ -265,6 +270,7 @@ function updateChart() {
     const entradas = transacoes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
     const saidas = transacoes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
 
+    if (!chartInstance) return;
     chartInstance.data.datasets[0].data = [entradas, saidas];
     chartInstance.update();
 }

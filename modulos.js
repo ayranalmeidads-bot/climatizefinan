@@ -147,7 +147,13 @@
     const qtd=document.createElement('input');qtd.type='number';qtd.className='item-quantidade';qtd.min='0.01';qtd.max='10000';qtd.step='0.01';qtd.required=true;qtd.value=item.quantidade??1;qtd.setAttribute('aria-label','Quantidade');
     const valor=document.createElement('input');valor.type='number';valor.className='item-valor';valor.min='0';valor.max='10000000';valor.step='0.01';valor.required=true;valor.value=item.valor_unitario??0;valor.setAttribute('aria-label','Valor unitário');
     const remover=document.createElement('button');remover.type='button';remover.className='btn-remove-item';remover.title='Excluir item';remover.textContent='×';remover.onclick=()=>{row.remove();atualizarTotais();};
-    row.append(select,desc,qtd,valor,remover);container.append(row);
+    const campo=(titulo,el,classe)=>{
+      const label=document.createElement('label');label.className='quote-item-field '+classe;
+      const caption=document.createElement('span');caption.textContent=titulo;
+      label.append(caption,el);return label;
+    };
+    row.append(campo('Tipo de serviço',select,'q-field-tipo'),campo('Descrição',desc,'q-field-descricao'),campo('Qtd.',qtd,'q-field-qtd'),campo('Valor unitário (R$)',valor,'q-field-valor'),remover);
+    remover.setAttribute('aria-label','Remover item');container.append(row);
     [qtd,valor].forEach(el=>el.addEventListener('input',atualizarTotais));
     return row;
   }
