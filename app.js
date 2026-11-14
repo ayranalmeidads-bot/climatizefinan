@@ -194,19 +194,19 @@ function updateCalculos() {
 
 function renderTabela() {
     const tbody = document.getElementById('transacoes-list');
-    tbody.innerHTML = '';
-
+    tbody.replaceChildren();
     transacoes.forEach(t => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${t.data}</td>
-            <td><b style="color: ${t.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)'}">${t.tipo.toUpperCase()}</b></td>
-            <td><strong>${t.categoria}</strong></td>
-            <td>${t.descricao || '-'}</td>
-            <td>R$ ${t.valor.toFixed(2)}</td>
-            <td><button onclick="deletarTransacao('${t.id}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Excluir</button></td>
-        `;
-        tbody.appendChild(tr);
+        const cell = (valor) => {const td=document.createElement('td');td.textContent=String(valor ?? '');tr.appendChild(td);return td;};
+        cell(t.data);
+        const tipo = cell(String(t.tipo || '').toUpperCase());
+        tipo.style.color = t.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)';
+        cell(t.categoria);cell(t.descricao || '-');cell('R$ ' + Number(t.valor).toFixed(2));
+        const acao = document.createElement('td');
+        const botao = document.createElement('button');botao.textContent='Excluir';
+        botao.style.cssText='background:var(--danger);color:#fff;border:0;padding:6px 9px;border-radius:6px;cursor:pointer;';
+        botao.addEventListener('click',()=>deletarTransacao(t.id));
+        acao.appendChild(botao);tr.appendChild(acao);tbody.appendChild(tr);
     });
 }
 
@@ -214,6 +214,12 @@ function renderTabela() {
 // FUNÇÃO DE EXCLUSÃO CORRIGIDA
 // ==========================================
 async function deletarTransacao(id) {
+    // Registros originados dos orçamentos V2 são conciliados: não excluir isoladamente.
+    try {
+        const {data:pagos, error:pgErr} = await supabase10.from('climatize_recebimentos_v2').select('id').eq('transacao_id',String(id)).limit(1);
+        if (!pgErr && pagos?.length) {alert('Este lançamento veio de um orçamento. Para preservar a conciliação, não é possível excluí-lo isoladamente.');return;}
+        if (pgErr && pgErr.code !== '42P01' && pgErr.code !== 'PGRST205') { throw pgErr; }
+    } catch (err) {alert('Não foi possível verificar a vinculação do lançamento. Exclusão cancelada por segurança.');return;}
     if (!confirm("Tem certeza de que deseja apagar este lançamento?")) return;
 
     try {
@@ -235,6 +241,8 @@ async function deletarTransacao(id) {
 // GRÁFICOS (CHART.JS)
 // ==========================================
 function renderChart() {
+    // Evita "Canvas is already in use" ao restaurar a sessão ou fazer novo login.
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
     const ctx = document.getElementById('financeChart').getContext('2d');
     chartInstance = new Chart(ctx, {
         type: 'bar',
@@ -355,11 +363,18 @@ ocrFileInput.addEventListener('change', async (e) => {
         itensEncontrados.forEach((item, index) => {
             const divItem = document.createElement('div');
             divItem.style.cssText = "display: flex; gap: 8px; align-items: center;";
-            divItem.innerHTML = `
-                <span style="font-size: 0.8rem; font-weight: bold; min-width: 45px;">Item ${index + 1}:</span>
-                <input type="text" class="item-desc" value="${item.texto}" style="flex: 2; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem;">
-                <input type="number" step="0.01" class="item-val" value="${item.valor || ''}" placeholder="Valor R$" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem;">
-            `;
+            // OCR é dado externo: construir elementos sem interpolar HTML.
+            const labelItem = document.createElement('span');
+            labelItem.style.cssText = 'font-size:0.8rem;font-weight:bold;min-width:45px;';
+            labelItem.textContent = `Item ${index + 1}:`;
+            const descInput = document.createElement('input');
+            descInput.type = 'text'; descInput.className = 'item-desc'; descInput.value = item.texto;
+            descInput.style.cssText = 'flex:2;min-width:150px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;';
+            const valorInput = document.createElement('input');
+            valorInput.type = 'number'; valorInput.step = '0.01'; valorInput.className = 'item-val';
+            valorInput.value = item.valor || ''; valorInput.placeholder = 'Valor R$';
+            valorInput.style.cssText = 'flex:1;min-width:100px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;';
+            divItem.append(labelItem, descInput, valorInput);
             ocrItensList.appendChild(divItem);
         });
 
@@ -437,18 +452,18 @@ btnCancelOcr.addEventListener('click', () => {
 // EXPORTAÇÃO (CSV & PDF COM LOGO NA RAIZ)
 // ==========================================
 document.getElementById('btn-export-csv').addEventListener('click', () => {
-    let csvContent = "data:text/csv;charset=utf-8,Data,Tipo,Categoria,Descricao,Valor\n";
-    transacoes.forEach(t => {
-        csvContent += `${t.data},${t.tipo},${t.categoria},"${t.descricao || ''}",${t.valor}\n`;
-    });
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "climatize_relatorio.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // RFC 4180: aspas e quebras de linha escapadas; neutraliza fórmulas de planilhas.
+    const celula = (v) => {
+        let x = String(v ?? '');
+        if (/^[\s]*[=+@\-\t\r]/.test(x)) x = "'" + x;
+        return '"' + x.replace(/"/g, '""') + '"';
+    };
+    const linhas = [['Data','Tipo','Categoria','Descricao','Valor']];
+    transacoes.forEach(t => linhas.push([t.data,t.tipo,t.categoria,t.descricao || '',t.valor]));
+    const blob = new Blob(['\uFEFF' + linhas.map(l => l.map(celula).join(';')).join('\r\n')], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='climatize_relatorio.csv';a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 
 document.getElementById('btn-export-pdf').addEventListener('click', async () => {

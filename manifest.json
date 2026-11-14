@@ -1,23 +1,24 @@
 {
   "short_name": "Climatize",
-  "name": "Climatize - Painel Financeiro",
+  "name": "Climatize 2.0 — Gestão e Orçamentos",
   "icons": [
     {
-      "src": "climatize.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "climatize.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "start_url": "./index.html",
   "background_color": "#122a2e",
   "theme_color": "#1e4d54",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "description": "Financeiro, agenda e orçamentos Climatize"
 }

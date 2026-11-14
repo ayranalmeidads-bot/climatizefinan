@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Climatize - Painel Financeiro</title>
+    <title>Climatize 2.0 · Gestão e Orçamentos</title>
     <!-- CSS Principal -->
     <link rel="stylesheet" href="style.css">
     <!-- PWA Manifest -->
@@ -14,12 +14,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- jsPDF para exportar relatórios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Vincula o Manifest -->
-<link rel="manifest" href="manifest.json">
+    <!-- Manifest já declarado acima -->
 
 <!-- Configurações adicionais para aparecer o ícone no Android/Chrome e iOS -->
 <meta name="theme-color" content="#1e4d54">
-<link rel="apple-touch-icon" href="climatize.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
@@ -82,7 +81,13 @@
             </div>
         </header>
 
-        <main class="main-content">
+        <nav class="module-nav" aria-label="Módulos">
+          <button type="button" class="module-tab is-active" data-modulo="financeiro" aria-selected="true">▦ Financeiro</button>
+          <button type="button" class="module-tab" data-modulo="agenda" aria-selected="false">▦ Agenda</button>
+          <button type="button" class="module-tab" data-modulo="orcamentos" aria-selected="false">▤ Orçamentos</button>
+        </nav>
+        <div class="app-flash hidden" id="app-flash" role="status" aria-live="polite"></div>
+        <main class="main-content" id="modulo-financeiro">
             
             <!-- Resumo Financeiro -->
             <section class="kpi-grid">
@@ -124,9 +129,11 @@
                             </div>
                             <div>
                                 <label style="font-size: 0.85rem; font-weight: bold;">Valor (R$):</label>
-                                <input type="number" step="0.01" id="ocr-prev-val" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                <input type="number" step="0.01" id="ocr-prev-total" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                             </div>
                         </div>
+                        <select id="ocr-prev-tipo" aria-label="Tipo do lançamento"><option value="entrada">Entrada</option><option value="saida" selected>Saída</option></select>
+                        <div id="ocr-itens-list" class="ocr-itens-editor"></div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button type="button" id="btn-confirm-ocr" class="btn-primary" style="background-color: var(--success); padding: 8px 15px; cursor: pointer;">✅ Confirmar e Enviar Lançamento</button>
                             <button type="button" id="btn-cancel-ocr" class="btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 8px 15px; cursor: pointer;">❌ Descartar</button>
@@ -196,9 +203,61 @@
             </section>
 
         </main>
+        <main class="main-content hidden" id="modulo-agenda" aria-label="Agenda">
+          <section class="module-heading"><div><span class="eyebrow">Planejamento operacional</span><h1>Agenda de serviços</h1><p>Férias, visitas, manutenções e instalações em um só lugar.</p></div><button type="button" id="agenda-novo" class="btn-primary">+ Compromisso</button></section>
+          <section class="card-section">
+            <div class="calendar-toolbar"><button type="button" id="cal-prev" class="btn-outline" aria-label="Mês anterior">‹</button><h2 id="cal-month"></h2><button type="button" id="cal-next" class="btn-outline" aria-label="Próximo mês">›</button><button type="button" id="cal-today" class="btn-outline">Hoje</button></div>
+            <div class="calendar-weekdays" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+            <div id="cal-grid" class="calendar-grid" role="grid" aria-label="Calendário de compromissos"></div>
+            <div class="calendar-legend"><span>● Instalação</span><span>● Manutenção</span><span>● Férias</span><span>● Outros</span></div>
+          </section>
+          <section class="card-section"><h3 id="agenda-selected-title">Compromissos</h3><div id="agenda-dia-lista" class="item-stack"></div></section>
+          <section class="card-section hidden" id="agenda-form-wrap"><h3 id="agenda-form-heading">Novo compromisso</h3>
+            <form id="agenda-form" class="form-v2">
+              <input id="agenda-id" type="hidden">
+              <div class="form-two"><label>Tipo de compromisso<select id="agenda-tipo" required><option value="instalacao">Instalação</option><option value="manutencao">Manutenção</option><option value="ferias">Férias</option><option value="visita">Visita técnica</option><option value="outro">Outro</option></select></label><label>Título<input id="agenda-titulo" type="text" maxlength="140" required placeholder="Ex.: Instalação Dr. Gilson"></label></div>
+              <div class="form-two"><label>Início<input id="agenda-inicio" type="datetime-local" required></label><label>Fim<input id="agenda-fim" type="datetime-local" required></label></div>
+              <div class="form-two"><label>Cliente (opcional)<input id="agenda-cliente" type="text" maxlength="140"></label><label>Local (opcional)<input id="agenda-local" type="text" maxlength="250"></label></div>
+              <label>Observações<textarea id="agenda-notas" rows="2" maxlength="2000"></textarea></label>
+              <div id="agenda-conflitos" class="warning-note hidden"></div>
+              <div class="form-actions"><button type="submit" class="btn-primary" id="agenda-save">Salvar compromisso</button><button type="button" id="agenda-cancel" class="btn-outline">Cancelar</button></div>
+            </form>
+          </section>
+        </main>
+        <main class="main-content hidden" id="modulo-orcamentos" aria-label="Orçamentos">
+          <section class="module-heading"><div><span class="eyebrow">Propostas & execução</span><h1>Orçamentos</h1><p>Crie, envie, acompanhe, compare e registre o recebimento.</p></div><button type="button" id="orc-novo" class="btn-primary">+ Novo orçamento</button></section>
+          <section class="quote-metrics"><div><span>Orçamentos</span><strong id="orc-count">0</strong></div><div><span>Em negociação</span><strong id="orc-pendente">R$ 0,00</strong></div><div><span>Realizados</span><strong id="orc-realizado">R$ 0,00</strong></div><div><span>Recebido via orçamentos</span><strong id="orc-recebido">R$ 0,00</strong></div></section>
+          <section class="card-section" id="orc-list-wrap"><div class="list-head"><h3>Histórico de orçamentos</h3><label class="list-filter">Filtrar <select id="orc-filter"><option value="todos">Todos</option><option value="rascunho">Rascunhos</option><option value="enviado">Enviados</option><option value="aprovado">Aprovados</option><option value="agendado">Agendados</option><option value="realizado">Realizados</option><option value="cancelado">Cancelados</option></select></label></div><div class="list-head"><label class="search-field">Pesquisar<input id="orc-busca" type="search" placeholder="Nome do cliente ou número"></label></div><div class="item-stack" id="orc-lista"></div></section>
+          <section class="card-section hidden" id="orc-form-wrap"><div class="list-head"><h3 id="orc-form-title">Novo orçamento</h3><button type="button" class="btn-outline" id="orc-voltar">Voltar ao histórico</button></div>
+            <form id="orc-form" class="form-v2">
+              <input id="orc-id" type="hidden">
+              <div class="form-two"><label>Nome do cliente *<input id="orc-cliente" maxlength="160" required placeholder="Nome ou razão social"></label><label>Telefone do cliente<input id="orc-telefone" maxlength="30" type="tel" placeholder="(77) 99999-9999"></label></div>
+              <div class="form-two"><label>E-mail do cliente<input id="orc-email" type="email" maxlength="200"></label><label>Endereço do serviço<input id="orc-endereco" maxlength="300" placeholder="Opcional"></label></div>
+              <div class="form-two"><label>Emissão<input id="orc-data" type="date" required></label><label>Validade (dias)<input id="orc-validade" type="number" min="1" max="365" required value="5"></label></div>
+              <div class="form-two"><label>Situação<select id="orc-status"><option value="rascunho">Rascunho</option><option value="enviado">Enviado</option><option value="aprovado">Aprovado</option><option value="agendado">Agendado</option><option value="realizado">Serviço realizado</option><option value="cancelado">Cancelado</option></select></label><label>Tipo de desconto<select id="orc-desconto-tipo"><option value="valor">Valor fixo (R$)</option><option value="percentual">Percentual (%)</option></select></label></div>
+              <div class="list-head"><h3>Serviços e materiais orçados</h3><button class="btn-outline" id="orc-add-item" type="button">+ Adicionar item</button></div>
+              <div id="orc-itens" class="quote-items"></div>
+              <div class="form-two"><label>Desconto à vista<input id="orc-desconto" type="number" min="0" step="0.01" value="0"></label><div class="totals-pane"><span>Subtotal <b id="orc-subtotal">R$ 0,00</b></span><span>Desconto <b id="orc-valor-desconto">R$ 0,00</b></span><strong>Total: <b id="orc-total">R$ 0,00</b></strong></div></div>
+              <label>Condições e observações extras<textarea id="orc-observacoes" rows="3" maxlength="3000" placeholder="Ex.: Materiais não inclusos, prazo ou orientações de instalação"></textarea></label>
+              <div class="schedule-check"><label class="check-label"><input type="checkbox" id="orc-agendar"> Agendar o serviço na agenda</label><div id="orc-agendar-campos" class="form-two hidden"><label>Início agendado<input id="orc-inicio" type="datetime-local"></label><label>Fim agendado<input id="orc-fim" type="datetime-local"></label></div><div id="orc-conflitos" class="warning-note hidden"></div></div>
+              <div class="form-actions"><button type="submit" class="btn-primary" id="orc-salvar">Salvar orçamento</button><button type="button" id="orc-pdf" class="btn-outline">Gerar PDF</button></div>
+            </form>
+            <div id="orc-realizacao-wrap" class="realization-box hidden"><h3>Realização e valores cobrados</h3><p>Compare o combinado com o executado. O orçamento original fica preservado, mesmo que haja sinal antecipado. Ajustes no valor executado nunca podem ficar abaixo do que já foi recebido.</p>
+              <div class="form-actions"><button type="button" id="orc-copiar-real" class="btn-outline">Copiar serviços orçados</button></div>
+              <div id="orc-itens-real" class="quote-items"></div><button type="button" id="orc-add-real" class="btn-outline">+ Item executado</button>
+              <div class="form-two"><label>Desconto efetivamente concedido (R$)<input type="number" id="orc-desconto-real" min="0" step="0.01" value="0"></label><div class="totals-pane"><span>Total originalmente aprovado <b id="orc-total-ref">R$ 0,00</b></span><strong>Total efetivamente cobrado <b id="orc-total-real">R$ 0,00</b></strong></div></div>
+              <button type="button" id="orc-confirmar-real" class="btn-primary">Confirmar execução / atualizar valores cobrados</button>
+            </div>
+            <div id="orc-recebimento-wrap" class="realization-box hidden"><h3>Recebimentos</h3><p>Uma entrada é lançada no financeiro somente quando o pagamento é confirmado. Aceita sinal e parcelas.</p><div id="orc-recebimentos" class="item-stack"></div>
+              <div class="form-two"><label>Valor recebido (R$)<input type="number" id="orc-pagamento" step="0.01" min="0.01" placeholder="0,00"></label><label>Data do recebimento<input type="date" id="orc-data-pagamento"></label></div><button type="button" class="btn-primary" id="orc-registrar-pagamento">Confirmar recebimento e lançar receita</button>
+            </div>
+            <details id="orc-revisoes-wrap" class="revision-panel"><summary>Histórico de alterações do orçamento</summary><div id="orc-revisoes" class="item-stack"></div></details>
+          </section>
+        </main>
     </div>
 
     <!-- Script Principal JS -->
     <script src="app.js"></script>
+    <script src="modulos.js"></script>
 </body>
 </html>
