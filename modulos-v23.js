@@ -172,7 +172,57 @@
     const ar=itens($('orc-itens-real'));
     $('orc-total-real').textContent=dinheiro(soma(ar)-(Number($('orc-desconto-real').value)||0));
     $('orc-total-ref').textContent=dinheiro(s-d);
+    const subtotalReal=soma(ar), descontoReal=Number($('orc-desconto-real').value)||0;
+    $('orc-conf-proposta').textContent=dinheiro(s-d);
+    $('orc-conf-subtotal').textContent=dinheiro(subtotalReal);
+    $('orc-conf-desconto').textContent='− '+dinheiro(descontoReal);
+    $('orc-conf-total').textContent=dinheiro(subtotalReal-descontoReal);
+    if(!activeQuote) atualizarResumoOrcamento(null);
   }
+
+  // Interface de trabalho v2.3.2: somente um painel expandido, sem tocar no schema.
+  const painéisOrc=['orc-proposta-panel','orc-agenda-panel','orc-realizacao-wrap','orc-recebimento-wrap','orc-revisoes-wrap'];
+  function abrirPainelOrc(id,rolar=true){
+    painéisOrc.forEach(p=>{const el=$(p);if(el)el.open=p===id && !el.classList.contains('hidden');});
+    if(id&&rolar)$(id).scrollIntoView({block:'start',behavior:'smooth'});
+  }
+  function avisoFluxo(message,danger=false){
+    const el=$('orc-flow-notice');el.textContent=message;el.classList.remove('hidden');el.classList.toggle('is-error',danger);
+  }
+  function limparAvisoFluxo(){const el=$('orc-flow-notice');el.classList.add('hidden');el.classList.remove('is-error');el.textContent='';}
+  function atualizarResumoOrcamento(q){
+    const pagamentos=q?recebimentos.filter(r=>r.orcamento_id===q.id):[];
+    const pago=cents(pagamentos.reduce((acc,r)=>acc+Number(r.valor),0));
+    const proposta=q?Number(q.total):cents(soma(itens($('orc-itens')))-(Number($('orc-desconto-tipo').value==='percentual'?cents(soma(itens($('orc-itens')))*(Number($('orc-desconto').value)||0)/100):(Number($('orc-desconto').value)||0))));
+    const executado=q?.total_realizado!=null;
+    const cobrado=executado?Number(q.total_realizado):null;
+    const base=q?Number(q.total_realizado??q.total):proposta;
+    const saldo=Math.max(0,cents(base-pago));
+    $('orc-resumo-situacao').textContent=q?`Orçamento #${q.id.slice(0,8).toUpperCase()} · ${q.cliente_nome}`:'Nova proposta ainda não salva';
+    $('orc-resumo-status').textContent=q?(statusNome[q.status]||q.status):'Novo';
+    $('orc-resumo-proposta').textContent=dinheiro(proposta);
+    $('orc-resumo-cobrado').textContent=executado?dinheiro(cobrado):'A confirmar';
+    $('orc-resumo-recebido').textContent=dinheiro(pago);
+    $('orc-resumo-pendente').textContent=q?dinheiro(saldo):'—';
+    $('orc-resumo-hint').textContent=!q?'Primeiro salve a proposta. Cobrança e recebimento são operações independentes.':q.status==='cancelado'?'Orçamento cancelado: execução e recebimentos estão indisponíveis.':executado?'Cobrança confirmada. Os pagamentos só aparecem aqui após registro no Financeiro.':pagamentos.length?'Sinal registrado. Execução ainda não confirmada; o saldo usa o valor da proposta.':'A execução ainda não foi confirmada; o saldo usa a proposta como referência.';
+    $('orc-proposta-preview').textContent=q?`Proposta salva · ${dinheiro(proposta)} · editar ou gerar PDF`:'Cliente, serviços, valores e condições';
+    $('orc-agenda-preview').textContent=q?.agendado_inicio?`Agendado para ${new Date(q.agendado_inicio).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'Abrir para agendar, alterar ou remover agendamento';
+    $('orc-execucao-preview').textContent=executado?`Cobrança confirmada · ${dinheiro(cobrado)}`:'Conferir serviços e valor efetivamente cobrado';
+    $('orc-recebimento-preview').textContent=q?`${dinheiro(pago)} recebido · ${dinheiro(saldo)} pendente`:'Disponível após salvar a proposta';
+    $('orc-pay-cobrado').textContent=dinheiro(base);
+    $('orc-pay-recebido').textContent=dinheiro(pago);
+    $('orc-pay-pendente').textContent=dinheiro(saldo);
+    $('orc-acao-execucao').disabled=!q||q.status==='cancelado';
+    $('orc-acao-receber').disabled=!q||q.status==='cancelado';
+    $('orc-overview-pdf').disabled=!q;
+  }
+  function erroCampoExecucao(message,el){
+    abrirPainelOrc('orc-realizacao-wrap',false);
+    $('orc-itens-real').querySelectorAll('.quote-field-error').forEach(x=>x.classList.remove('quote-field-error'));
+    if(el){el.classList.add('quote-field-error');el.focus({preventScroll:true});el.scrollIntoView({block:'center',behavior:'smooth'});}
+    avisoFluxo(message,true);return flash(message,true);
+  }
+
   function limparFormulario() {
     quoteDirty=false;activeQuote=null;$('orc-form').reset();$('orc-id').value='';$('orc-status').value='rascunho';$('orc-validade').value='5';$('orc-data').value=dataLocal();
     $('orc-desconto').value='0';$('orc-desconto-real').value='0';$('orc-itens').replaceChildren();$('orc-itens-real').replaceChildren();
@@ -184,7 +234,8 @@
     $('orc-itens-real').querySelectorAll('input,select,button').forEach(el=>el.disabled=false);
     $('orc-status').querySelectorAll('option').forEach(opt=>opt.disabled=false);
     $('orc-pdf').disabled=true;chavePagamento=null;
-    $('orc-revisoes').textContent='Este orçamento ainda não foi salvo.';$('orc-revisoes-wrap').open=false;atualizarTotais();$('orc-form-wrap').scrollIntoView({behavior:'smooth'});
+    abrirPainelOrc('orc-proposta-panel',false);limparAvisoFluxo();
+    $('orc-revisoes').textContent='Este orçamento ainda não foi salvo.';$('orc-revisoes-wrap').open=false;atualizarTotais();atualizarResumoOrcamento(null);$('orc-form-wrap').scrollIntoView({behavior:'smooth'});
   }
   function abrirOrcamento(id) {
     const q=orcamentos.find(o=>o.id===id);if(!q)return flash('Orçamento não encontrado.',true);
@@ -218,7 +269,7 @@
     const sum=document.createElement('div');sum.className='payment-summary';sum.textContent=`Cobrado: ${dinheiro(limite)} · Recebido: ${dinheiro(totalPago)} · Em aberto: ${dinheiro(pendente)}`;hist.prepend(sum);
     $('orc-pagamento').value=pendente>0?pendente.toFixed(2):'';$('orc-pagamento').max=String(pendente);
     $('orc-data-pagamento').value=dataLocal();$('orc-registrar-pagamento').disabled=pendente<=0;
-    atualizarTotais();$('orc-form-wrap').scrollIntoView({behavior:'smooth'});
+    atualizarTotais();atualizarResumoOrcamento(q);abrirPainelOrc(null,false);limparAvisoFluxo();$('orc-form-wrap').scrollIntoView({behavior:'smooth'});
     carregarRevisoes(q.id);
   }
   async function carregarRevisoes(id) {
@@ -281,38 +332,88 @@
       const r=atual?db.from('climatize_orcamentos_v2').update(payload).eq('id',atual).select('*').single():db.from('climatize_orcamentos_v2').insert(payload).select('*').single();
       const {data,error}=await r;if(error)throw error;
       try{await agendarOrcamento(data);}catch(e2){await recarregar();abrirOrcamento(data.id);throw new Error('Orçamento salvo, mas o vínculo com a agenda falhou. Reabra e salve novamente. Detalhes: '+e2.message);}
-      await recarregar();abrirOrcamento(data.id);flash('Orçamento salvo com sucesso. Já pode gerar o PDF.');
+      await recarregar();abrirOrcamento(data.id);avisoFluxo('✓ Orçamento salvo com sucesso. Já pode gerar o PDF. Proposta e agendamento atualizados.');flash('Orçamento salvo com sucesso. Já pode gerar o PDF.');
     }catch(e2){erro(e2);}finally{botao.disabled=false;}
   }
   async function confirmarRealizacao() {
     if(!activeQuote)return;
-    const arr=itens($('orc-itens-real'));
-    const desconto=Number($('orc-desconto-real').value);
-    if(!arr.length||arr.some(i=>!i.descricao||i.quantidade<=0||!Number.isFinite(i.valor_unitario)||i.valor_unitario<0)||!Number.isFinite(desconto)||desconto<0||desconto>soma(arr))return flash('Revise serviços executados, valores e descontos.',true);
-    if(!await ClimatizeDialog.confirm('Confirmar serviços executados e valores efetivamente cobrados?'))return;
-    try{const {error}=await db.from('climatize_orcamentos_v2').update({status:'realizado',itens_realizados:arr,desconto_realizado:desconto}).eq('id',activeQuote.id);if(error)throw error;await recarregar();abrirOrcamento(activeQuote.id);flash('Execução registrada. O orçamento foi preservado para comparação.');}catch(e){erro(e);}
+    if(quoteDirty){abrirPainelOrc('orc-proposta-panel');return avisoFluxo('Há mudanças não salvas na proposta ou no agendamento. Salve antes de confirmar a execução.',true);}
+    const rows=[...$('orc-itens-real').querySelectorAll('.quote-item-row')];
+    if(!rows.length)return erroCampoExecucao('Adicione ao menos um serviço executado antes de confirmar.');
+    for(let i=0;i<rows.length;i++){
+      const row=rows[i],desc=row.querySelector('.item-descricao'),qtd=row.querySelector('.item-quantidade'),valor=row.querySelector('.item-valor');
+      if(!desc.value.trim())return erroCampoExecucao(`Item ${i+1}: informe a descrição do serviço executado.`,desc);
+      if(!qtd.value.trim()||!Number.isFinite(Number(qtd.value))||Number(qtd.value)<=0)return erroCampoExecucao(`Item ${i+1}: informe uma quantidade maior que zero.`,qtd);
+      if(!valor.value.trim()||!Number.isFinite(Number(valor.value))||Number(valor.value)<0)return erroCampoExecucao(`Item ${i+1}: confira o valor unitário.`,valor);
+    }
+    const arr=itens($('orc-itens-real')),valorDesconto=$('orc-desconto-real').value,desconto=Number(valorDesconto);
+    if(valorDesconto.trim()===''||!Number.isFinite(desconto)||desconto<0||desconto>soma(arr))return erroCampoExecucao('O desconto final deve ser um valor válido entre zero e o subtotal executado.',$('orc-desconto-real'));
+    const total=cents(soma(arr)-desconto),jaPago=cents(recebimentos.filter(r=>r.orcamento_id===activeQuote.id).reduce((a,r)=>a+Number(r.valor),0));
+    if(total<jaPago)return erroCampoExecucao(`O valor cobrado (${dinheiro(total)}) não pode ser menor do que o já recebido (${dinheiro(jaPago)}).`,$('orc-desconto-real'));
+    const confirmado=await ClimatizeDialog.confirm(`Conferência da cobrança:\nProposta: ${dinheiro(activeQuote.total)}\nServiços executados: ${dinheiro(soma(arr))}\nDesconto final: ${dinheiro(desconto)}\nValor a cobrar: ${dinheiro(total)}\n\nIsto não registra nenhum recebimento. Confirma?`);
+    if(!confirmado)return;
+    const btn=$('orc-confirmar-real');btn.disabled=true;
+    let gravado=false;
+    try{
+      const id=activeQuote.id;
+      const {error}=await db.from('climatize_orcamentos_v2').update({status:'realizado',itens_realizados:arr,desconto_realizado:desconto}).eq('id',id);
+      if(error)throw error;
+      gravado=true;
+      await recarregar();abrirOrcamento(id);
+      if(activeQuote?.id!==id||cents(activeQuote.total_realizado)!==total){
+        avisoFluxo('A execução foi gravada, mas a atualização dos valores na tela ainda não pôde ser confirmada. Reabra o histórico antes de tentar novamente.',true);
+      }else{
+        avisoFluxo(`✓ Execução registrada. Valor cobrado: ${dinheiro(total)}. Nenhum recebimento foi lançado por essa confirmação.`);
+        flash('Execução registrada. O orçamento foi preservado para comparação.');
+      }
+    }catch(e){erro(e);avisoFluxo(gravado?'A execução foi gravada, mas a atualização da tela ficou pendente. Confira o histórico antes de tentar novamente.':'Não foi possível confirmar a cobrança. Confira os dados e tente novamente.',true);if(!gravado)abrirPainelOrc('orc-realizacao-wrap',false);}
+    finally{btn.disabled=false;}
   }
   async function receber() {
     if(!activeQuote)return;
-    const valor=Number($('orc-pagamento').value),data=$('orc-data-pagamento').value;
-    if(!Number.isFinite(valor)||valor<=0||!data)return flash('Informe um valor recebido válido e a data.',true);
-    const saldo=cents(Number(activeQuote.total_realizado??activeQuote.total)-recebimentos.filter(x=>x.orcamento_id===activeQuote.id).reduce((s,x)=>s+Number(x.valor),0));
-    if(valor>saldo)return flash('O valor recebido excede o saldo. Confira o valor.',true);
-    if(!['aprovado','agendado','realizado'].includes(activeQuote.status))return flash('Aprove ou agende o orçamento antes de registrar o recebimento.',true);
-    if(!await ClimatizeDialog.confirm(`Confirmar recebimento de ${dinheiro(valor)} em ${dataFormatada(data)}? Isso criará uma entrada financeira e não pode ser desfeito por esta tela.`))return;
-    // Em falha de rede, repetir exatamente a mesma tentativa com a mesma chave.
-    const tentativaId=`climatize_v2_pay_${activeQuote.id}_${valor.toFixed(2)}_${data}`;
-    try {chavePagamento=sessionStorage.getItem(tentativaId)||crypto.randomUUID();sessionStorage.setItem(tentativaId,chavePagamento);}
-    catch {chavePagamento ||= crypto.randomUUID();}
+    if(quoteDirty){abrirPainelOrc('orc-proposta-panel');return avisoFluxo('Salve as mudanças pendentes na proposta antes de registrar o recebimento.',true);}
+    const id=activeQuote.id,valor=Number($('orc-pagamento').value),data=$('orc-data-pagamento').value;
+    if(!Number.isFinite(valor)||valor<=0||!data){abrirPainelOrc('orc-recebimento-wrap',false);$('orc-pagamento').focus();return avisoFluxo('Informe um valor recebido válido e uma data.',true);}
+    const saldo=cents(Number(activeQuote.total_realizado??activeQuote.total)-recebimentos.filter(x=>x.orcamento_id===id).reduce((s,x)=>s+Number(x.valor),0));
+    if(valor>saldo){abrirPainelOrc('orc-recebimento-wrap',false);$('orc-pagamento').focus();return avisoFluxo(`O pagamento de ${dinheiro(valor)} excede o saldo de ${dinheiro(saldo)}.`,true);}
+    if(!['aprovado','agendado','realizado'].includes(activeQuote.status))return avisoFluxo('Aprove ou agende a proposta antes de registrar recebimento.',true);
+    if(!await ClimatizeDialog.confirm(`Confirmar recebimento de ${dinheiro(valor)} em ${dataFormatada(data)}?\nSerá criada uma entrada no Financeiro. Isto não pode ser desfeito nesta tela.`))return;
+    // Preservar a chave até verificar o recibo; uma falha de rede não pode duplicar a receita.
+    const tentativaId=`climatize_v2_pay_${id}_${valor.toFixed(2)}_${data}`;
+    try{chavePagamento=sessionStorage.getItem(tentativaId)||crypto.randomUUID();sessionStorage.setItem(tentativaId,chavePagamento);}
+    catch{chavePagamento ||=crypto.randomUUID();}
     const btn=$('orc-registrar-pagamento');btn.disabled=true;
+    let gravado=false;
     try{
-      const {error}=await db.rpc('climatize_v2_confirmar_recebimento',{p_orcamento_id:activeQuote.id,p_valor:valor,p_data:data,p_chave_idempotencia:chavePagamento});
+      const {data:recebimentoId,error}=await db.rpc('climatize_v2_confirmar_recebimento',{p_orcamento_id:id,p_valor:valor,p_data:data,p_chave_idempotencia:chavePagamento});
       if(error)throw error;
-      try{sessionStorage.removeItem(tentativaId);}catch{} chavePagamento=null;
-      await recarregar();abrirOrcamento(activeQuote.id);
-      if(typeof buscarTransacoes==='function')await buscarTransacoes();
-      flash('Recebimento confirmado e lançado uma única vez no financeiro.');
-    }catch(e){erro(e);}finally{btn.disabled=false;}
+      gravado=true;
+      // A RPC retorna o ID do recebimento; não confundir êxito da RPC com
+      // confirmação de que o dashboard do navegador já foi sincronizado.
+      const {data:recibo,error:erroRecibo}=await db.from('climatize_recebimentos_v2').select('id,orcamento_id,transacao_id,valor,data_recebimento').eq('id',recebimentoId).eq('orcamento_id',id).single();
+      if(erroRecibo||!recibo||!recibo.transacao_id)throw new Error('Recebimento registrado, mas ainda não foi possível validar seu lançamento financeiro.');
+      const {data:entrada,error:erroEntrada}=await db.from('transacoes').select('id,tipo,valor,data').eq('id',recibo.transacao_id).single();
+      if(erroEntrada||!entrada||entrada.tipo!=='entrada'||cents(entrada.valor)!==cents(recibo.valor))throw new Error('Pagamento registrado, mas a verificação do lançamento no Financeiro ficou pendente.');
+      await recarregar();abrirOrcamento(id);
+      if(typeof buscarTransacoes==='function'){
+        try{await buscarTransacoes();}catch(err){console.warn('Atualização do dashboard pendente',err);}
+      }
+      // A busca financeira original captura erros internamente; conferir o estado
+      // realmente atualizado antes de afirmar que o dashboard foi sincronizado.
+      const sincronizado=typeof transacoes!=='undefined' && Array.isArray(transacoes) &&
+        transacoes.some(t=>String(t.id)===String(recibo.transacao_id)&&t.tipo==='entrada'&&cents(t.valor)===cents(valor));
+      if(sincronizado){
+        try{sessionStorage.removeItem(tentativaId);}catch{}chavePagamento=null;
+        avisoFluxo(`✓ Recebimento de ${dinheiro(valor)} registrado em ${dataFormatada(data)}. Entrada #${recibo.transacao_id} conferida no Financeiro e dashboard atualizado.`);
+        flash('Recebimento confirmado e lançado uma única vez no financeiro.');
+      }else{
+        avisoFluxo(`✓ Recebimento de ${dinheiro(valor)} registrado no Financeiro (lançamento #${recibo.transacao_id}). Atualização visual do dashboard pendente; consulte o histórico antes de tentar novamente.`,true);
+      }
+    }catch(e){
+      erro(e);
+      avisoFluxo(gravado?'O pagamento foi registrado, mas a confirmação visual ficou pendente. Confira o histórico no Financeiro antes de tentar novamente.':'Não foi possível registrar o pagamento. Os dados permaneceram no formulário para nova tentativa.',true);
+      if(!gravado)abrirPainelOrc('orc-recebimento-wrap',false);
+    }finally{btn.disabled=false;}
   }
 
   // === PDF DO ORÇAMENTO ===
@@ -384,6 +485,17 @@
     $('cal-next').onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()+1,1);renderCalendario();};
     $('cal-today').onclick=()=>{selected=dataLocal();mes=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderCalendario();};
     ['agenda-inicio','agenda-fim'].forEach(id=>$(id).addEventListener('change',()=>{if($('agenda-inicio').value&&$('agenda-fim').value)validarConflito($('agenda-inicio').value,$('agenda-fim').value,$('agenda-id').value||null);}));
+    painéisOrc.forEach(id=>$(id).addEventListener('toggle',()=>{
+      if($(id).open)painéisOrc.filter(other=>other!==id).forEach(other=>$(other).open=false);
+    }));
+    document.querySelectorAll('[data-open-quote]').forEach(b=>b.addEventListener('click',()=>{
+      if(!b.disabled)abrirPainelOrc(b.dataset.openQuote);
+    }));
+    $('orc-overview-pdf').onclick=()=>gerarPdf(activeQuote);
+    $('orc-ver-financeiro').onclick=()=>{modulo('financeiro');$('card-historico').scrollIntoView({block:'start',behavior:'smooth'});};
+    $('orc-form').addEventListener('invalid',(e)=>{
+      const p=e.target.closest('details.quote-work-panel');if(p)abrirPainelOrc(p.id,false);
+    },true);
     $('orc-novo').onclick=limparFormulario;$('orc-voltar').onclick=()=>{$('orc-form-wrap').classList.add('hidden');$('orc-list-wrap').classList.remove('hidden');renderOrcamentos();};
     $('orc-form').addEventListener('submit',salvarOrcamento);
     $('orc-form').addEventListener('input',()=>{quoteDirty=true;});

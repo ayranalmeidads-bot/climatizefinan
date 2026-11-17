@@ -289,3 +289,50 @@ html[data-theme="dark"] .cl-modal{color-scheme:dark}
  #transacoes-table td::before{flex-basis:63px}
  .export-filter-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* 2.3.2 — fluxo do orçamento em etapas; escopo restrito ao módulo de orçamentos */
+#orc-form-wrap{display:flex;flex-direction:column;gap:15px}
+#orc-form-wrap .list-head{margin-bottom:0}
+.quote-overview{display:flex;flex-direction:column;gap:14px;padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2);min-width:0}
+.quote-overview-top{display:flex;justify-content:space-between;gap:15px;align-items:start}
+.quote-overview-top p{margin-top:5px;font-weight:800;font-size:.94rem;color:var(--title)}
+.quote-overview-status{flex-shrink:0;padding:7px 11px;border:1px solid var(--border);border-radius:25px;background:var(--surface);font-size:.72rem;font-weight:800;color:var(--primary)}
+.quote-overview-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.quote-overview-grid>div{min-width:0;padding:14px 13px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.quote-overview-grid span{display:block;margin-bottom:7px;font-size:.74rem;font-weight:700;color:var(--muted)}
+.quote-overview-grid strong{font-size:clamp(.97rem,1.7vw,1.21rem);font-weight:850;color:var(--title);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.quote-overview-grid>div:nth-child(3) strong{color:var(--success)}
+.quote-overview-hint{font-size:.78rem;color:var(--muted)}
+.quote-overview-actions{display:flex;gap:8px;flex-wrap:wrap}
+.quote-overview-actions button{flex:1 1 130px;font-size:.77rem;min-height:41px}
+.quote-overview-actions button:disabled{opacity:.53;cursor:not-allowed}
+.quote-flow-notice{padding:13px 15px;border:1px solid var(--success);border-radius:12px;background:var(--success-soft);color:var(--text);font-weight:700;font-size:.87rem;line-height:1.5}
+.quote-flow-notice.is-error{background:var(--danger-soft);border-color:var(--danger)}
+.quote-flow-form{gap:13px}
+#orc-form-wrap .quote-work-panel{min-width:0;display:block;overflow:visible;border:1px solid var(--border);border-radius:14px;background:var(--surface);margin:0}
+#orc-form-wrap .quote-work-panel[open]{border-color:var(--accent);box-shadow:0 3px 18px #194f5014}
+#orc-form-wrap .quote-work-panel>summary{display:flex;gap:12px;align-items:center;padding:16px 17px;list-style:none;cursor:pointer;user-select:none}
+#orc-form-wrap .quote-work-panel>summary::-webkit-details-marker{display:none}
+#orc-form-wrap .quote-work-panel>summary:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:12px}
+.quote-step-icon{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--primary);font-size:.78rem;font-weight:850}
+.quote-step-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.quote-step-copy strong{color:var(--title);font-size:.9rem;line-height:1.24}
+.quote-step-copy small{font-size:.75rem;color:var(--muted);line-height:1.3;overflow-wrap:anywhere}
+.quote-step-chevron{flex:none;color:var(--muted);font-size:1.4rem;transition:transform .15s}
+.quote-work-panel[open] .quote-step-chevron{transform:rotate(180deg)}
+.quote-panel-body{padding:0 17px 17px;display:flex;flex-direction:column;gap:15px;min-width:0}
+#orc-form .quote-panel-body>.form-two,#orc-form .quote-panel-body>label{margin:0}
+#orc-form-wrap .quote-work-panel .realization-box,#orc-form-wrap .quote-work-panel .schedule-check{padding:14px;background:var(--surface-2);gap:13px;border-radius:12px}
+.quote-charge-check,.quote-receipt-summary{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+.quote-charge-check h4{font-size:.91rem;color:var(--title);margin-bottom:2px}
+.quote-charge-check>div,.quote-receipt-summary>div{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.84rem}
+.quote-charge-check span,.quote-receipt-summary span{color:var(--muted)}
+.quote-charge-check b,.quote-receipt-summary b{color:var(--title);font-variant-numeric:tabular-nums;white-space:nowrap}
+.quote-charge-check .quote-charge-final,.quote-receipt-summary .quote-charge-final{padding-top:12px;border-top:1px solid var(--border)}
+.quote-charge-final span{font-weight:800;color:var(--title)}
+.quote-charge-final strong{color:var(--primary);font-size:1.2rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.quote-charge-check small{font-size:.74rem;color:var(--muted)}
+#orc-form-wrap input.quote-field-error,#orc-form-wrap select.quote-field-error{border-color:var(--danger)!important;box-shadow:0 0 0 2px var(--danger-soft)}
+.quote-goto-finance{align-self:flex-start}
+@media(max-width:760px){.quote-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.quote-overview{padding:13px;gap:12px}.quote-overview-grid{gap:8px}.quote-overview-grid>div{padding:12px 10px}.quote-overview-grid span{font-size:.7rem}.quote-overview-grid strong{font-size:1.02rem}.quote-overview-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.quote-overview-actions button{flex:auto;padding:9px 7px;font-size:.71rem;white-space:normal}#orc-form-wrap .quote-work-panel>summary{padding:14px 11px;gap:10px}.quote-step-icon{width:33px;height:33px}.quote-panel-body{padding:0 11px 13px}.quote-charge-check>div,.quote-receipt-summary>div{flex-wrap:wrap}.quote-charge-final strong{font-size:1.08rem}}
