@@ -138,6 +138,7 @@ async function buscarTransacoes() {
         transacoes = data;
         updateCalculos();
         renderTabela();
+        if(typeof atualizarFiltrosExportacao==='function')atualizarFiltrosExportacao();
         updateChart();
     } catch (error) {
         console.error("Erro ao buscar transações:", error.message);
@@ -198,22 +199,111 @@ function updateCalculos() {
 }
 
 function renderTabela() {
-    const tbody = document.getElementById('transacoes-list');
+    const tbody=document.getElementById('transacoes-list');
     tbody.replaceChildren();
-    transacoes.forEach(t => {
-        const tr = document.createElement('tr');
-        const cell = (valor) => {const td=document.createElement('td');td.textContent=String(valor ?? '');tr.appendChild(td);return td;};
-        cell(t.data);
-        const tipo = cell(String(t.tipo || '').toUpperCase());
-        tipo.style.color = t.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)';
-        cell(t.categoria);cell(t.descricao || '-');cell(Number(t.valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}));
-        const acao = document.createElement('td');
-        const botao = document.createElement('button');botao.textContent='Excluir';
-        botao.className='btn-row-danger';
-        botao.addEventListener('click',()=>deletarTransacao(t.id));
-        acao.appendChild(botao);tr.appendChild(acao);tbody.appendChild(tr);
+    transacoes.forEach(t=>{
+        const tr=document.createElement('tr');
+        const cell=(label,valor,classe='')=>{
+            const td=document.createElement('td');td.dataset.label=label;
+            td.textContent=String(valor??'');if(classe)td.className=classe;
+            tr.append(td);return td;
+        };
+        cell('Data',formatarDataFinanceira(t.data));
+        const tipo=cell('Tipo',String(t.tipo||'').toUpperCase());
+        tipo.style.color=t.tipo==='entrada'?'var(--success)':'var(--danger)';
+        cell('Categoria',t.categoria||'—');cell('Descrição',t.descricao||'—');
+        cell('Valor',moedaFinanceira(t.valor),'money-cell');
+        const acao=document.createElement('td');acao.dataset.label='Ações';
+        const grupo=document.createElement('div');grupo.className='transaction-actions';
+        const editar=document.createElement('button');editar.type='button';editar.textContent='Editar';
+        editar.className='btn-row-edit';editar.addEventListener('click',()=>abrirEdicaoTransacao(t));
+        const excluir=document.createElement('button');excluir.type='button';excluir.textContent='Excluir';
+        excluir.className='btn-row-danger';excluir.addEventListener('click',()=>deletarTransacao(t.id));
+        grupo.append(editar,excluir);acao.append(grupo);tr.append(acao);tbody.append(tr);
     });
 }
+
+const moedaFinanceira=(valor)=>Number(valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function formatarDataFinanceira(iso){
+    const v=String(iso||'').slice(0,10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(v)?`${v.slice(8,10)}/${v.slice(5,7)}/${v.slice(0,4)}`:v;
+}
+
+// O backend v2 tem trigger que proíbe alterações em recebimentos conciliados.
+// Fazemos também a pré-checagem no cliente e nunca liberamos edição se ela falhar.
+async function validarTransacaoLivre(id){
+    const {data,error}=await supabase10.from('climatize_recebimentos_v2')
+      .select('id').eq('transacao_id',String(id)).limit(1);
+    if(error && !['42P01','PGRST205'].includes(error.code))throw new Error('Não foi possível verificar o vínculo com orçamentos. Operação cancelada por segurança.');
+    // Se a tabela ainda não existir, nenhuma receita v2 poderá estar vinculada.
+    if(data?.length)throw new Error('Este lançamento pertence a um recebimento de orçamento e não pode ser editado ou excluído isoladamente.');
+}
+
+const modalEditarTransacao=document.getElementById('transacao-edit-dialog');
+const formEditarTransacao=document.getElementById('form-editar-transacao');
+let transacaoEmEdicao=null;
+const editTipo=document.getElementById('edit-t-tipo');
+const editCategoria=document.getElementById('edit-t-categoria');
+function atualizarCategoriasEdicao(preferida){
+    const valores=[...new Set([...(CATEGORIAS[editTipo.value]||[]),preferida].filter(Boolean))];
+    editCategoria.replaceChildren();
+    valores.forEach(cat=>editCategoria.add(new Option(cat,cat)));
+    if(preferida)editCategoria.value=preferida;
+}
+editTipo.addEventListener('change',()=>atualizarCategoriasEdicao());
+document.getElementById('edit-t-cancelar').addEventListener('click',()=>modalEditarTransacao.close());
+modalEditarTransacao.addEventListener('close',()=>{transacaoEmEdicao=null;formEditarTransacao.reset();});
+async function abrirEdicaoTransacao(lancamento){
+    try{
+        const {data:{user},error}=await supabase10.auth.getUser();
+        if(error||!user||user.id!==lancamento.user_id)throw new Error('Sessão inválida ou lançamento sem permissão de edição.');
+        await validarTransacaoLivre(lancamento.id);
+        // Recarregar o registro evita editar valores já alterados em outro dispositivo.
+        const {data:atual,error:erroBusca}=await supabase10.from('transacoes')
+          .select('id,user_id,tipo,categoria,descricao,valor,data').eq('id',lancamento.id).eq('user_id',user.id).single();
+        if(erroBusca||!atual)throw new Error('Não foi possível carregar o lançamento atualizado.');
+        transacaoEmEdicao=atual;
+        editTipo.value=atual.tipo;
+        atualizarCategoriasEdicao(atual.categoria);
+        document.getElementById('edit-t-descricao').value=atual.descricao||'';
+        document.getElementById('edit-t-valor').value=atual.valor;
+        document.getElementById('edit-t-data').value=String(atual.data).slice(0,10);
+        modalEditarTransacao.showModal();
+    }catch(e){await ClimatizeDialog.alert(e.message,{titulo:'Edição indisponível'});}
+}
+formEditarTransacao.addEventListener('submit',async e=>{
+    e.preventDefault();if(!transacaoEmEdicao)return;
+    const salvar=document.getElementById('edit-t-salvar');salvar.disabled=true;
+    try{
+        const antiga=transacaoEmEdicao;
+        const {data:{user},error:authError}=await supabase10.auth.getUser();
+        if(authError||!user||user.id!==antiga.user_id)throw new Error('Sessão expirada ou acesso não autorizado.');
+        await validarTransacaoLivre(antiga.id);
+        const nova={tipo:editTipo.value,categoria:editCategoria.value,
+          descricao:document.getElementById('edit-t-descricao').value.trim(),
+          valor:Number(document.getElementById('edit-t-valor').value),
+          data:document.getElementById('edit-t-data').value};
+        if(!['entrada','saida'].includes(nova.tipo)||!nova.categoria||!nova.descricao||
+          !Number.isFinite(nova.valor)||nova.valor<=0||!/^\d{4}-\d{2}-\d{2}$/.test(nova.data)){
+          throw new Error('Preencha todos os campos com valores válidos.');
+        }
+        // Controle de concorrência: a edição só persiste caso o registro permaneça
+        // exatamente como estava quando o formulário foi aberto.
+        let req=supabase10.from('transacoes').update(nova)
+          .eq('id',antiga.id).eq('user_id',user.id).eq('tipo',antiga.tipo)
+          .eq('categoria',antiga.categoria).eq('valor',antiga.valor).eq('data',antiga.data);
+        req=antiga.descricao===null?req.is('descricao',null):req.eq('descricao',antiga.descricao);
+        const {data,error}=await req.select('id');
+        if(error)throw error;
+        if(!data?.length)throw new Error('O lançamento foi alterado em outro dispositivo ou não está disponível. Nenhuma mudança foi aplicada. Atualize o histórico e tente novamente.');
+        modalEditarTransacao.close();
+        await buscarTransacoes();
+        await ClimatizeDialog.alert('Lançamento atualizado com sucesso!');
+    }catch(err){
+        console.error('Erro ao editar lançamento:',err);
+        await ClimatizeDialog.alert('Não foi possível salvar as alterações: '+err.message,{titulo:'Edição não concluída',modo:'danger'});
+    }finally{salvar.disabled=false;}
+});
 
 // ==========================================
 // FUNÇÃO DE EXCLUSÃO CORRIGIDA
@@ -231,7 +321,7 @@ async function deletarTransacao(id) {
         const { error } = await supabase10
             .from('transacoes')
             .delete()
-            .match({ id: id }); // Utiliza match para garantir a correspondência exata do ID
+            .match({ id: id }); // Mantém a exclusão original e as políticas RLS existentes
 
         if (error) throw error;
 
@@ -460,87 +550,168 @@ btnCancelOcr.addEventListener('click', () => {
 });
 
 // ==========================================
-// EXPORTAÇÃO (CSV & PDF COM LOGO NA RAIZ)
+// EXPORTAÇÃO FILTRADA — CSV E PDF
 // ==========================================
-document.getElementById('btn-export-csv').addEventListener('click', () => {
-    // RFC 4180: aspas e quebras de linha escapadas; neutraliza fórmulas de planilhas.
-    const celula = (v) => {
-        let x = String(v ?? '');
-        if (/^[\s]*[=+@\-\t\r]/.test(x)) x = "'" + x;
-        return '"' + x.replace(/"/g, '""') + '"';
-    };
-    const linhas = [['Data','Tipo','Categoria','Descricao','Valor']];
-    transacoes.forEach(t => linhas.push([t.data,t.tipo,t.categoria,t.descricao || '',t.valor]));
-    const blob = new Blob(['\uFEFF' + linhas.map(l => l.map(celula).join(';')).join('\r\n')], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download='climatize_relatorio.csv';a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+const exportPeriodo=document.getElementById('export-periodo');
+const exportTipo=document.getElementById('export-tipo');
+const exportCategoria=document.getElementById('export-categoria');
+const exportResumo=document.getElementById('export-filtros-resumo');
+function atualizarFiltrosExportacao(){
+    const periodo=exportPeriodo.value;
+    document.getElementById('export-mes-wrap').classList.toggle('hidden',periodo!=='mes');
+    document.getElementById('export-inicio-wrap').classList.toggle('hidden',periodo!=='intervalo');
+    document.getElementById('export-fim-wrap').classList.toggle('hidden',periodo!=='intervalo');
+    const selecionada=exportCategoria.value;
+    const categorias=[...new Set([...CATEGORIAS.entrada,...CATEGORIAS.saida,...transacoes.map(t=>t.categoria)].filter(Boolean))];
+    const permitidas=exportTipo.value==='todos'?categorias:
+        [...new Set([...(CATEGORIAS[exportTipo.value]||[]),...transacoes.filter(t=>t.tipo===exportTipo.value).map(t=>t.categoria)].filter(Boolean))];
+    exportCategoria.replaceChildren(new Option('Todas as categorias','todos'));
+    permitidas.sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(cat=>exportCategoria.add(new Option(cat,cat)));
+    exportCategoria.value=permitidas.includes(selecionada)?selecionada:'todos';
+    const itens=[];
+    if(periodo==='mes')itens.push('Mês: '+(document.getElementById('export-mes').value||'não definido'));
+    if(periodo==='intervalo')itens.push('Intervalo: '+(document.getElementById('export-inicio').value||'início não definido')+' a '+(document.getElementById('export-fim').value||'fim não definido'));
+    if(exportTipo.value!=='todos')itens.push(exportTipo.value==='entrada'?'Entradas':'Saídas');
+    if(exportCategoria.value!=='todos')itens.push('Categoria: '+exportCategoria.value);
+    exportResumo.textContent=itens.length?itens.join(' · '):'Todos os registros';
+}
+['export-periodo','export-tipo','export-categoria','export-mes','export-inicio','export-fim'].forEach(id=>{
+    document.getElementById(id).addEventListener('change',atualizarFiltrosExportacao);
+});
+document.getElementById('export-limpar').addEventListener('click',()=>{
+    exportPeriodo.value='todos';exportTipo.value='todos';exportCategoria.value='todos';
+    ['export-mes','export-inicio','export-fim'].forEach(id=>document.getElementById(id).value='');
+    atualizarFiltrosExportacao();
+});
+function selecionarRegistrosExportacao(){
+    const periodo=exportPeriodo.value;
+    let desde=null,ate=null,etiqueta='Todos os períodos';
+    if(periodo==='mes'){
+        const mes=document.getElementById('export-mes').value;
+        if(!/^\d{4}-\d{2}$/.test(mes))throw new Error('Escolha um mês para exportar.');
+        desde=mes+'-01';const [ano,m]=mes.split('-').map(Number);
+        ate=`${ano}-${String(m).padStart(2,'0')}-${String(new Date(ano,m,0).getDate()).padStart(2,'0')}`;
+        etiqueta=`${String(m).padStart(2,'0')}/${ano}`;
+    }
+    if(periodo==='intervalo'){
+        desde=document.getElementById('export-inicio').value;
+        ate=document.getElementById('export-fim').value;
+        if(!desde||!ate||desde>ate)throw new Error('Informe um intervalo de datas válido.');
+        etiqueta=`${formatarDataFinanceira(desde)} a ${formatarDataFinanceira(ate)}`;
+    }
+    const tipo=exportTipo.value,categoria=exportCategoria.value;
+    const registros=transacoes.filter(t=>{
+        const data=String(t.data||'').slice(0,10);
+        return (!desde||data>=desde)&&(!ate||data<=ate)&&
+            (tipo==='todos'||t.tipo===tipo)&&(categoria==='todos'||t.categoria===categoria);
+    }).sort((a,b)=>String(a.data).localeCompare(String(b.data))||Number(a.id)-Number(b.id));
+    const filtros=[`Período: ${etiqueta}`];
+    if(tipo!=='todos')filtros.push(`Tipo: ${tipo==='entrada'?'Entradas':'Saídas'}`);
+    if(categoria!=='todos')filtros.push(`Categoria: ${categoria}`);
+    return {registros,etiqueta,filtros:filtros.join('  ·  ')};
+}
+async function validarExportacao(){
+    try{
+        const resultado=selecionarRegistrosExportacao();
+        if(!resultado.registros.length){await ClimatizeDialog.alert('Nenhum lançamento encontrado para os filtros escolhidos.');return null;}
+        return resultado;
+    }catch(e){await ClimatizeDialog.alert(e.message,{titulo:'Revise os filtros'});return null;}
+}
+// Preserva a neutralização de fórmulas e o BOM do CSV existente.
+document.getElementById('btn-export-csv').addEventListener('click',async()=>{
+    const selecionado=await validarExportacao();if(!selecionado)return;
+    const nome=await ClimatizeDialog.askCsvName('Climatize_Relatorio_Financeiro');if(!nome)return;
+    const celula=(v)=>{let x=String(v??'');if(/^[\s]*[=+@\-\t\r]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"';};
+    const linhas=[['Data','Tipo','Categoria','Descricao','Valor']];
+    selecionado.registros.forEach(t=>linhas.push([t.data,t.tipo,t.categoria,t.descricao||'',Number(t.valor).toFixed(2).replace('.',',')]));
+    const blob=new Blob(['\uFEFF'+linhas.map(l=>l.map(celula).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=nome;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 
-document.getElementById('btn-export-pdf').addEventListener('click', async () => {
-    if (!window.jspdf?.jsPDF) {
-        await ClimatizeDialog.alert('Biblioteca de PDF indisponível. Verifique sua conexão e tente novamente.', { titulo: 'Não foi possível gerar o PDF', modo: 'danger' });
-        return;
-    }
-    const nomePdf = await ClimatizeDialog.askPdfName(`Climatize_Relatorio_Financeiro_${new Date().toLocaleDateString('sv-SE')}`);
-    if (!nomePdf) return;
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const getBase64ImageFromUrl = async (imageUrl) => {
-        const res = await fetch(imageUrl);
-        const blob = await res.blob();
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
+document.getElementById('btn-export-pdf').addEventListener('click',async()=>{
+    if(!window.jspdf?.jsPDF){await ClimatizeDialog.alert('Biblioteca de PDF indisponível. Verifique a conexão e tente novamente.');return;}
+    const selecionado=await validarExportacao();if(!selecionado)return;
+    const nome=await ClimatizeDialog.askPdfName(`Climatize_Relatorio_Financeiro_${new Date().toLocaleDateString('sv-SE')}`);
+    if(!nome)return;
+    try{
+        const {jsPDF}=window.jspdf;
+        const doc=new jsPDF({unit:'mm',format:'a4'}),W=210,H=297;
+        const teal=[7,79,85],turq=[65,183,198],light=[238,248,249],ink=[27,52,59];
+        let logo=null;
+        try{
+            const response=await fetch('climatize.png');if(!response.ok)throw new Error('Logo não localizada');
+            const blob=await response.blob();
+            logo=await new Promise((resolve,reject)=>{
+                const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);
+            });
+        }catch(err){console.warn('Logo indisponível no relatório:',err);}
+        const fill=c=>doc.setFillColor(...c),text=c=>doc.setTextColor(...c);
+        function pagina(){
+            fill([255,255,255]);doc.rect(0,0,W,H,'F');fill(teal);doc.rect(0,0,W,43,'F');
+            fill(turq);doc.rect(0,42,W,1,'F');
+            if(logo){try{doc.addImage(logo,'PNG',13,3,63,37);}catch(err){console.warn('Erro ao desenhar logo:',err);}}
+            else{doc.setFont('helvetica','bold');doc.setFontSize(19);text([255,255,255]);doc.text('CLIMATIZE',14,25);}
+            text([255,255,255]);doc.setFont('helvetica','bold');doc.setFontSize(9);
+            doc.text('CLIMATIZE AR-CONDICIONADO',196,12,{align:'right'});
+            doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('RELATÓRIO FINANCEIRO',196,20,{align:'right'});
+            doc.setDrawColor(210,225,228);doc.line(14,281,196,281);
+            text([80,104,110]);doc.setFontSize(8);doc.text('Climatize · Conforto e bem-estar para cada ambiente',14,288);
+            doc.text(String(doc.internal.getNumberOfPages()),196,288,{align:'right'});
+        }
+        pagina();text(ink);doc.setFont('helvetica','bold');doc.setFontSize(16);
+        doc.text('RELATÓRIO FINANCEIRO',14,55);
+        doc.setFont('helvetica','normal');doc.setFontSize(9);
+        doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`,14,62);
+        const filtroLinhas=doc.splitTextToSize(selecionado.filtros,180);
+        doc.text(filtroLinhas,14,69);
+        let y=69+filtroLinhas.length*4.4+5;
+        const entradas=selecionado.registros.filter(t=>t.tipo==='entrada').reduce((a,t)=>a+Number(t.valor||0),0);
+        const saidas=selecionado.registros.filter(t=>t.tipo==='saida').reduce((a,t)=>a+Number(t.valor||0),0);
+        const indicadores=[['ENTRADAS',entradas],['SAÍDAS',saidas],['SALDO',entradas-saidas]];
+        indicadores.forEach(([titulo,valor],i)=>{
+            const x=14+i*62;fill(light);doc.roundedRect(x,y,58,19,2,2,'F');
+            text(teal);doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.text(titulo,x+4,y+6.5);
+            doc.setFontSize(11);text(ink);doc.text(moedaFinanceira(valor),x+4,y+14);
         });
-    };
-
-    try {
-        const logoData = await getBase64ImageFromUrl('climatize.png');
-        doc.addImage(logoData, 'PNG', 14, 10, 35, 12);
-    } catch (e) {
-        console.log("Logo não encontrada na raiz, gerando PDF sem imagem.");
-    }
-
-    doc.setFontSize(16);
-    doc.setTextColor(30, 77, 84);
-    doc.text("Climatize - Relatório Financeiro", 55, 18);
-
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 55, 24);
-
-    doc.setDrawColor(200);
-    doc.line(14, 30, 196, 30);
-
-    let y = 38;
-    doc.setFontSize(10);
-    doc.setTextColor(0);
-
-    transacoes.forEach((t) => {
-        if (y > 275) {
-            doc.addPage();
-            y = 20;
+        y+=27;
+        function cabecalhoTabela(){
+            fill(teal);doc.roundedRect(14,y,182,10,1.4,1.4,'F');
+            doc.setFont('helvetica','bold');doc.setFontSize(7.3);text([255,255,255]);
+            doc.text('DATA',17,y+6.5);doc.text('DESCRIÇÃO',41,y+6.5);
+            doc.text('CATEGORIA',113,y+6.5);doc.text('TIPO',157,y+6.5);
+            doc.text('VALOR',192,y+6.5,{align:'right'});y+=12;
         }
-
-        const tipoFormatado = t.tipo.toUpperCase();
-        doc.text(`${t.data} | [${tipoFormatado}] ${t.categoria} - R$ ${t.valor.toFixed(2)}`, 14, y);
-        y += 6;
-        if (t.descricao) {
-            doc.setFontSize(8);
-            doc.setTextColor(100);
-            doc.text(`Descrição: ${t.descricao}`, 14, y);
-            doc.setFontSize(10);
-            doc.setTextColor(0);
-            y += 7;
-        } else {
-            y += 4;
+        cabecalhoTabela();
+        let n=0;
+        for(const item of selecionado.registros){
+            const descricao=doc.splitTextToSize(String(item.descricao||'—'),67);
+            const categoria=doc.splitTextToSize(String(item.categoria||'—'),38);
+            let i=0,j=0,primeiro=true;
+            do{
+                // Registros excepcionalmente extensos continuam na página seguinte.
+                const linhasDisponiveis=Math.max(1,Math.floor((269-y-5)/4.2));
+                if(linhasDisponiveis<2){doc.addPage();pagina();y=54;cabecalhoTabela();continue;}
+                const desc=descricao.slice(i,i+linhasDisponiveis),cat=categoria.slice(j,j+linhasDisponiveis);
+                const contagem=Math.max(desc.length,cat.length,1),altura=Math.max(11,contagem*4.2+5);
+                if(y+altura>270){doc.addPage();pagina();y=54;cabecalhoTabela();continue;}
+                if(n%2===0){fill(light);doc.rect(14,y,182,altura,'F');}
+                doc.setFont('helvetica','normal');doc.setFontSize(7.4);text(ink);
+                if(primeiro){
+                    doc.text(formatarDataFinanceira(item.data),17,y+5);
+                    doc.text(item.tipo==='entrada'?'Entrada':'Saída',157,y+5);
+                    doc.text(moedaFinanceira(item.valor),193,y+5,{align:'right'});
+                }
+                if(desc.length)doc.text(desc,41,y+5);
+                if(cat.length)doc.text(cat,113,y+5);
+                i+=desc.length;j+=cat.length;y+=altura;primeiro=false;
+                if(i<descricao.length||j<categoria.length){doc.addPage();pagina();y=54;cabecalhoTabela();}
+            }while(i<descricao.length||j<categoria.length);
+            n++;
         }
-    });
-
-    doc.save(nomePdf);
+        doc.save(nome);
+    }catch(e){console.error('Erro ao gerar relatório:',e);await ClimatizeDialog.alert('Não foi possível gerar o relatório: '+e.message,{titulo:'Falha na exportação',modo:'danger'});}
 });
 
 // ==========================================

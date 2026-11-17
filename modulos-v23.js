@@ -14,7 +14,7 @@
   const tipoAgenda = {instalacao:'Instalação',manutencao:'Manutenção',ferias:'Férias',visita:'Visita técnica',outro:'Outro'};
   let user = null, orcamentos = [], compromissos = [], recebimentos = [];
   let activeQuote = null, mes = new Date(new Date().getFullYear(), new Date().getMonth(), 1), selected = dataLocal();
-  let carregando = false, chavePagamento = null;
+  let carregando = false, chavePagamento = null, quoteDirty = false;
 
   function flash(message, danger = false) {
     const el = $('app-flash'); el.textContent = message; el.classList.remove('hidden');
@@ -146,13 +146,15 @@
     const desc=document.createElement('input');desc.type='text';desc.className='item-descricao';desc.placeholder='Descrição do serviço, equipamento e detalhes';desc.maxLength=400;desc.required=true;desc.value=item.descricao||'';
     const qtd=document.createElement('input');qtd.type='number';qtd.className='item-quantidade';qtd.min='0.01';qtd.max='10000';qtd.step='0.01';qtd.required=true;qtd.value=item.quantidade??1;qtd.setAttribute('aria-label','Quantidade');
     const valor=document.createElement('input');valor.type='number';valor.className='item-valor';valor.min='0';valor.max='10000000';valor.step='0.01';valor.required=true;valor.value=item.valor_unitario??0;valor.setAttribute('aria-label','Valor unitário');
-    const remover=document.createElement('button');remover.type='button';remover.className='btn-remove-item';remover.title='Excluir item';remover.textContent='×';remover.onclick=()=>{row.remove();atualizarTotais();};
+    const remover=document.createElement('button');remover.type='button';remover.className='btn-remove-item';remover.title='Excluir item';remover.textContent='×';remover.onclick=()=>{row.remove();quoteDirty=true;atualizarTotais();};
     const campo=(titulo,el,classe)=>{
       const label=document.createElement('label');label.className='quote-item-field '+classe;
       const caption=document.createElement('span');caption.textContent=titulo;
       label.append(caption,el);return label;
     };
-    row.append(campo('Tipo de serviço',select,'q-field-tipo'),campo('Descrição',desc,'q-field-descricao'),campo('Qtd.',qtd,'q-field-qtd'),campo('Valor unitário (R$)',valor,'q-field-valor'),remover);
+    const valorCampo=campo('Valor unitário (R$)',valor,'q-field-valor');
+    const totalItem=document.createElement('output');totalItem.className='quote-item-subtotal';totalItem.textContent=`Total do item: ${dinheiro(cents(Number(qtd.value)*Number(valor.value)))}`;valorCampo.append(totalItem);
+    row.append(campo('Tipo de serviço',select,'q-field-tipo'),campo('Descrição',desc,'q-field-descricao'),campo('Qtd.',qtd,'q-field-qtd'),valorCampo,remover);
     remover.setAttribute('aria-label','Remover item');container.append(row);
     [qtd,valor].forEach(el=>el.addEventListener('input',atualizarTotais));
     return row;
@@ -160,6 +162,10 @@
   function itens(container) {return [...container.querySelectorAll('.quote-item-row')].map(r=>({tipo:r.querySelector('.item-tipo').value,descricao:r.querySelector('.item-descricao').value.trim(),quantidade:Number(r.querySelector('.item-quantidade').value),valor_unitario:Number(r.querySelector('.item-valor').value)}));}
   function soma(arr) {return cents(arr.reduce((acc,x)=>acc+cents(x.quantidade*x.valor_unitario),0));}
   function atualizarTotais(){
+    document.querySelectorAll('#orc-itens .quote-item-row, #orc-itens-real .quote-item-row').forEach(row=>{
+      const total=row.querySelector('.quote-item-subtotal');
+      if(total)total.textContent=`Total do item: ${dinheiro(cents(Number(row.querySelector('.item-quantidade').value)*Number(row.querySelector('.item-valor').value)))}`;
+    });
     const s=soma(itens($('orc-itens'))), v=Number($('orc-desconto').value)||0;
     const d=$('orc-desconto-tipo').value==='percentual'?cents(s*v/100):cents(v);
     $('orc-subtotal').textContent=dinheiro(s);$('orc-valor-desconto').textContent=dinheiro(d);$('orc-total').textContent=dinheiro(s-d);
@@ -168,7 +174,7 @@
     $('orc-total-ref').textContent=dinheiro(s-d);
   }
   function limparFormulario() {
-    activeQuote=null;$('orc-form').reset();$('orc-id').value='';$('orc-status').value='rascunho';$('orc-validade').value='5';$('orc-data').value=dataLocal();
+    quoteDirty=false;activeQuote=null;$('orc-form').reset();$('orc-id').value='';$('orc-status').value='rascunho';$('orc-validade').value='5';$('orc-data').value=dataLocal();
     $('orc-desconto').value='0';$('orc-desconto-real').value='0';$('orc-itens').replaceChildren();$('orc-itens-real').replaceChildren();
     createItem($('orc-itens'));
     $('orc-agendar').checked=false;$('orc-agendar-campos').classList.add('hidden');$('orc-conflitos').classList.add('hidden');
@@ -182,7 +188,7 @@
   }
   function abrirOrcamento(id) {
     const q=orcamentos.find(o=>o.id===id);if(!q)return flash('Orçamento não encontrado.',true);
-    activeQuote=q;$('orc-form').reset();$('orc-id').value=q.id;
+    quoteDirty=false;activeQuote=q;$('orc-form').reset();$('orc-id').value=q.id;
     const campo={ 'orc-cliente':q.cliente_nome,'orc-telefone':q.cliente_telefone,'orc-email':q.cliente_email,'orc-endereco':q.cliente_endereco,'orc-data':q.emissao,'orc-validade':q.validade_dias,'orc-status':q.status,'orc-desconto-tipo':q.desconto_tipo,'orc-desconto':q.desconto_input,'orc-observacoes':q.observacoes};
     Object.entries(campo).forEach(([id,val])=>$(id).value=val??'');
     $('orc-itens').replaceChildren();(q.itens||[]).forEach(item=>createItem($('orc-itens'),item));
@@ -317,6 +323,9 @@
     const blob=await res.blob();return new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>{logoBase64=rd.result;resolve(logoBase64);};rd.onerror=reject;rd.readAsDataURL(blob);});
   }
   async function gerarPdf(q) {
+    if(q&&activeQuote?.id===q.id&&!$('orc-form-wrap').classList.contains('hidden')&&quoteDirty){
+      return flash('Há alterações não salvas. Salve o orçamento antes de baixar o PDF para evitar perda de dados.',true);
+    }
     if(!q)return flash('Salve o orçamento antes de gerar o PDF.',true);
     if(!window.jspdf?.jsPDF)return flash('Biblioteca de PDF indisponível. Confira a conexão e tente novamente.',true);
     const code=q.id.slice(0,8).toUpperCase();
@@ -339,14 +348,14 @@
       doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text(`Telefone: ${q.cliente_telefone||'Não informado'}`,19,87);
       const addr=doc.splitTextToSize(`Local: ${q.cliente_endereco||'A combinar'}`,169);doc.text(addr.slice(0,1),19,93);
       let y=106;
-      const header=()=>{setfill(teal);doc.roundedRect(14,y,182,10,1.5,1.5,'F');settext([255,255,255]);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('SERVIÇO / DESCRIÇÃO',18,y+6.5);doc.text('QTD.',147,y+6.5,{align:'right'});doc.text('VALOR',191,y+6.5,{align:'right'});y+=12;};
+      const header=()=>{setfill(teal);doc.roundedRect(14,y,182,10,1.5,1.5,'F');settext([255,255,255]);doc.setFontSize(7.6);doc.setFont('helvetica','bold');doc.text('SERVIÇO / DESCRIÇÃO',18,y+6.5);doc.text('QTD.',116,y+6.5,{align:'right'});doc.text('UNITÁRIO',153,y+6.5,{align:'right'});doc.text('TOTAL',192,y+6.5,{align:'right'});y+=12;};
       header();doc.setFont('helvetica','normal');
       (q.itens||[]).forEach((it,idx)=>{
-        const descricao=doc.splitTextToSize(`${it.tipo} — ${it.descricao}`,117),altura=Math.max(13,descricao.length*4.3+5);
+        const descricao=doc.splitTextToSize(`${it.tipo} — ${it.descricao}`,89),altura=Math.max(13,descricao.length*4.3+5);
         if(y+altura>240){doc.addPage();page();y=57;header();}
         if(idx%2===0){setfill(light);doc.rect(14,y,182,altura,'F');}
         settext(ink);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text(descricao,18,y+5.5);
-        doc.text(String(it.quantidade),147,y+5.5,{align:'right'});doc.text(dinheiro(cents(it.quantidade*it.valor_unitario)),192,y+5.5,{align:'right'});
+        doc.setFontSize(7.6);doc.text(String(it.quantidade),116,y+5.5,{align:'right'});doc.text(dinheiro(it.valor_unitario),153,y+5.5,{align:'right'});doc.text(dinheiro(cents(it.quantidade*it.valor_unitario)),192,y+5.5,{align:'right'});
         y+=altura;
       });
       if(y>213){doc.addPage();page();y=57;}
@@ -358,6 +367,12 @@
       doc.setFont('helvetica','bold');doc.setFontSize(9);settext(teal);doc.text('CONDIÇÕES E OBSERVAÇÕES',14,y);y+=5;doc.setFont('helvetica','normal');doc.setFontSize(8);settext(ink);
       cond.forEach(l=>{const parts=doc.splitTextToSize('• '+l,179);if(y+parts.length*4.2>278){doc.addPage();page();y=57;}doc.text(parts,15,y);y+=parts.length*4.2+1.5;});
       doc.save(nomePdf);
+      // Somente a geração pela tela de edição encerra o formulário; PDFs baixados
+      // diretamente do histórico não mudam o orçamento aberto em outra tela.
+      if(activeQuote?.id===q.id && !$('orc-form-wrap').classList.contains('hidden')){
+        $('orc-form-wrap').classList.add('hidden');$('orc-list-wrap').classList.remove('hidden');
+        renderOrcamentos();$('orc-list-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+      }
     } catch(e){erro(e);}
   }
 
@@ -371,7 +386,9 @@
     ['agenda-inicio','agenda-fim'].forEach(id=>$(id).addEventListener('change',()=>{if($('agenda-inicio').value&&$('agenda-fim').value)validarConflito($('agenda-inicio').value,$('agenda-fim').value,$('agenda-id').value||null);}));
     $('orc-novo').onclick=limparFormulario;$('orc-voltar').onclick=()=>{$('orc-form-wrap').classList.add('hidden');$('orc-list-wrap').classList.remove('hidden');renderOrcamentos();};
     $('orc-form').addEventListener('submit',salvarOrcamento);
-    $('orc-add-item').onclick=()=>{createItem($('orc-itens'));atualizarTotais();};
+    $('orc-form').addEventListener('input',()=>{quoteDirty=true;});
+    $('orc-form').addEventListener('change',()=>{quoteDirty=true;});
+    $('orc-add-item').onclick=()=>{createItem($('orc-itens'));quoteDirty=true;atualizarTotais();};
     $('orc-add-real').onclick=()=>{createItem($('orc-itens-real'));atualizarTotais();};
     $('orc-copiar-real').onclick=()=>{$('orc-itens-real').replaceChildren();itens($('orc-itens')).forEach(x=>createItem($('orc-itens-real'),x,true));$('orc-desconto-real').value=$('orc-desconto-tipo').value==='percentual'?cents(soma(itens($('orc-itens')))*Number($('orc-desconto').value)/100):$('orc-desconto').value;atualizarTotais();};
     ['orc-desconto','orc-desconto-tipo','orc-desconto-real'].forEach(id=>$(id).addEventListener('input',atualizarTotais));

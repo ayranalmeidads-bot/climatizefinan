@@ -120,6 +120,24 @@
     if (!r) return null;
     return `${limparNome(r.nome)}_${sufixo}.pdf`;
   }
+  async function nomeCsv(padrao) {
+    const sufixo=sufixoUnico();
+    const base=limparNome(String(padrao||'Climatize_Relatorio').replace(/\.csv$/i,''))||'Climatize_Relatorio';
+    const r=await abrir({
+      titulo:'Escolher nome do CSV',
+      mensagem:'Digite um nome para o arquivo. Um código exclusivo será acrescentado para preservar downloads anteriores.',
+      modo:'file',confirmar:'Baixar CSV',cancelar:'Cancelar',
+      campos:[{name:'nome',label:'Nome do arquivo (sem .csv)',value:base,maxLength:120,required:true}],
+      validar:({nome})=>limparNome(nome.replace(/\.csv$/i,''))?null:'Digite um nome válido.',
+      preparar:({corpo,controls})=>{
+        const preview=document.createElement('p');preview.className='cl-modal-preview';
+        const atualizar=()=>{preview.textContent=`Arquivo: ${limparNome(controls.get('nome').value.replace(/\.csv$/i,''))||'Climatize'}_${sufixo}.csv`;};
+        corpo.insertBefore(preview,corpo.querySelector('.cl-modal-error'));
+        controls.get('nome').addEventListener('input',atualizar);atualizar();
+      }
+    });
+    return r?`${limparNome(r.nome.replace(/\.csv$/i,''))}_${sufixo}.csv`:null;
+  }
   async function trocarSenha() {
     const r = await abrir({titulo:'Alterar senha', mensagem:'Confirme sua senha atual e escolha uma nova senha. Os campos são protegidos e não serão salvos no navegador.',modo:'lock',confirmar:'Alterar senha', cancelar:'Cancelar',
       campos:[
@@ -131,5 +149,5 @@
     });
     return r || null;
   }
-  window.ClimatizeDialog = Object.freeze({alert:alerta,confirm:confirmar,askPdfName:nomePdf,changePassword:trocarSenha});
+  window.ClimatizeDialog = Object.freeze({alert:alerta,confirm:confirmar,askPdfName:nomePdf,askCsvName:nomeCsv,changePassword:trocarSenha});
 })();

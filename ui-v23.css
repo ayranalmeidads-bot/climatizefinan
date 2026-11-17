@@ -254,3 +254,38 @@ html[data-theme="dark"] .cl-modal{color-scheme:dark}
 .cl-modal-preview span{font-weight:750;color:var(--primary);word-break:break-word}
 @media(max-width:540px){.cl-copyright{margin-bottom:calc(80px + env(safe-area-inset-bottom,0px));padding:16px 10px 20px}.cl-modal-form{padding:22px 18px 20px;gap:15px}.cl-modal-heading h2{font-size:1.12rem}.cl-modal-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.cl-modal-actions button:only-child{grid-column:1/-1}}
 @media(prefers-reduced-motion:reduce){.cl-modal::backdrop{backdrop-filter:none}}
+
+/* Ajustes cirúrgicos 2.3.1 — não modificam os demais módulos. */
+.quote-item-subtotal{display:block;margin-top:5px;color:var(--primary);font-size:.75rem;font-weight:800;font-variant-numeric:tabular-nums}
+#transacoes-table td.money-cell{white-space:nowrap;font-variant-numeric:tabular-nums;overflow-wrap:normal}
+#transacoes-table .transaction-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#transacoes-table .btn-row-edit{background:var(--surface-2);color:var(--primary);border:1px solid var(--border);border-radius:9px;font-size:.76rem;font-weight:750;padding:7px 10px}
+.cl-edit-dialog{color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:min(94vw,540px);max-height:90vh;overflow:auto;margin:auto;box-shadow:0 18px 65px #0006}
+.cl-edit-dialog::backdrop{background:#061b22a8}
+.cl-edit-dialog .form-v2{margin:0}
+.cl-edit-dialog h3{color:var(--title);margin:0}
+.export-filters{border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin:15px 0;background:var(--surface-2)}
+.export-filters summary{cursor:pointer;font-weight:800;color:var(--primary)}
+.export-filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.export-filter-grid label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:.8rem;font-weight:750;color:var(--muted)}
+.export-filter-grid label.hidden{display:none}
+.export-filter-grid select,.export-filter-grid input{min-width:0;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);min-height:43px;padding:9px}
+.export-filter-summary{font-size:.8rem;color:var(--muted);margin:12px 0}
+@media(max-width:760px){
+ #card-historico .table-responsive{overflow:visible;border:0;margin:0}
+ #transacoes-table,#transacoes-table tbody,#transacoes-table tr,#transacoes-table td{display:block;width:100%;min-width:0}
+ #transacoes-table thead{display:none}
+ #transacoes-table tbody{display:flex;flex-direction:column;gap:10px}
+ #transacoes-table tr{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:12px;min-width:0}
+ #transacoes-table td{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border:0;padding:5px 0;min-width:0;overflow-wrap:anywhere;font-size:.85rem}
+ #transacoes-table td::before{content:attr(data-label);flex:0 0 78px;font-weight:800;font-size:.75rem;color:var(--muted)}
+ #transacoes-table td:nth-child(4){font-weight:750;color:var(--title)}
+ #transacoes-table td.money-cell{justify-content:space-between;white-space:nowrap}
+ #transacoes-table td:last-child{align-items:center}
+ #transacoes-table .transaction-actions{justify-content:flex-end}
+ #transacoes-table .transaction-actions button{min-height:38px}
+}
+@media(max-width:380px){
+ #transacoes-table td::before{flex-basis:63px}
+ .export-filter-grid{grid-template-columns:minmax(0,1fr)}
+}

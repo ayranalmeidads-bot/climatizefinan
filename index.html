@@ -5,9 +5,9 @@
 <script>(function(){try{var saved=localStorage.getItem("climatize_theme_v21");document.documentElement.dataset.theme=saved==="dark"||saved==="light"?saved:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");}catch(e){document.documentElement.dataset.theme="light"}})();</script><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Climatize · Gestão Inteligente</title>
-<meta name="climatize-build" content="2.3-20261114"/>
+<meta name="climatize-build" content="2.3.1-20261117"/>
 <!-- CSS Principal -->
-<link href="ui-v23.css?v=20261114.2301" rel="stylesheet"/>
+<link href="ui-v23.css?v=20261117.2311" rel="stylesheet"/>
 <!-- PWA Manifest -->
 <link href="manifest.json?v=20261114.22" rel="manifest"/>
 <!-- Chart.js para Gráficos -->
@@ -177,8 +177,31 @@
 </tbody>
 </table>
 </div>
+<dialog class="cl-edit-dialog" id="transacao-edit-dialog" aria-labelledby="transacao-edit-title">
+<form id="form-editar-transacao" class="form-v2">
+<h3 id="transacao-edit-title">Editar lançamento</h3>
+<p class="section-subtitle">As alterações serão salvas no lançamento original.</p>
+<div class="form-two"><label>Tipo de movimentação<select id="edit-t-tipo" required><option value="entrada">Entrada (+)</option><option value="saida">Saída (-)</option></select></label>
+<label>Categoria<select id="edit-t-categoria" required></select></label></div>
+<label>Descrição<input id="edit-t-descricao" type="text" required maxlength="500"></label>
+<div class="form-two"><label>Valor (R$)<input id="edit-t-valor" type="number" min="0.01" step="0.01" required></label>
+<label>Data<input id="edit-t-data" type="date" required></label></div>
+<div class="form-actions"><button type="submit" class="btn-primary" id="edit-t-salvar">Salvar alterações</button><button type="button" class="btn-outline" id="edit-t-cancelar">Cancelar</button></div>
+</form>
+</dialog>
 </section><section class="card-section export-actions">
 <h3>Exportação de dados</h3><p class="section-subtitle">Baixe seus registros para análise e arquivo.</p>
+<details class="export-filters" id="export-filtros"><summary>Filtrar dados do relatório</summary>
+<div class="export-filter-grid">
+<label>Período<select id="export-periodo"><option value="todos">Todos os períodos</option><option value="mes">Mês específico</option><option value="intervalo">Intervalo de datas</option></select></label>
+<label class="hidden" id="export-mes-wrap">Mês<input id="export-mes" type="month"></label>
+<label class="hidden" id="export-inicio-wrap">De<input id="export-inicio" type="date"></label>
+<label class="hidden" id="export-fim-wrap">Até<input id="export-fim" type="date"></label>
+<label>Movimentação<select id="export-tipo"><option value="todos">Todas</option><option value="entrada">Entradas</option><option value="saida">Saídas</option></select></label>
+<label>Categoria<select id="export-categoria"><option value="todos">Todas as categorias</option></select></label>
+</div><p class="export-filter-summary" id="export-filtros-resumo" aria-live="polite">Todos os registros</p>
+<button type="button" class="btn-outline" id="export-limpar">Limpar filtros</button>
+</details>
 <div class="btn-group">
 <button class="btn-outline" id="btn-export-csv">Exportar Excel (CSV)</button>
 <button class="btn-outline" id="btn-export-pdf">Exportar Relatório PDF</button>
@@ -238,8 +261,8 @@
 <footer class="cl-copyright" aria-label="Direitos autorais">© 2026 ayrandev</footer>
 </div>
 <!-- Script Principal JS -->
-<script src="dialogos-v23.js?v=20261114.2301"></script>
-<script src="financeiro-v23.js?v=20261114.2301"></script>
-<script src="modulos-v23.js?v=20261114.2301"></script>
-<script src="interface-v23.js?v=20261114.2301"></script></body>
+<script src="dialogos-v23.js?v=20261117.2311"></script>
+<script src="financeiro-v23.js?v=20261117.2311"></script>
+<script src="modulos-v23.js?v=20261117.2311"></script>
+<script src="interface-v23.js?v=20261117.2311"></script></body>
 </html>
