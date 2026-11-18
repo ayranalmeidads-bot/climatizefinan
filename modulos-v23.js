@@ -13,6 +13,7 @@
   const statusNome = {rascunho:'Rascunho',enviado:'Enviado',aprovado:'Aprovado',agendado:'Agendado',realizado:'Realizado',cancelado:'Cancelado'};
   const tipoAgenda = {instalacao:'Instalação',manutencao:'Manutenção',ferias:'Férias',visita:'Visita técnica',outro:'Outro'};
   let user = null, orcamentos = [], compromissos = [], recebimentos = [];
+  let desconsiderados = new Set();
   let activeQuote = null, mes = new Date(new Date().getFullYear(), new Date().getMonth(), 1), selected = dataLocal();
   let carregando = false, chavePagamento = null, quoteDirty = false;
 
@@ -24,7 +25,7 @@
   function apagarFlash() { $('app-flash').classList.add('hidden'); }
   function erro(e) { console.error('[Climatize 2.0]',e); flash(e?.message || String(e) || 'Não foi possível concluir a ação.',true); }
   function modulo(nome) {
-    ['financeiro','agenda','orcamentos'].forEach(id => $('modulo-'+id).classList.toggle('hidden',id!==nome));
+    ['financeiro','agenda','orcamentos','marketing'].forEach(id => $('modulo-'+id).classList.toggle('hidden',id!==nome));
     document.querySelectorAll('[data-modulo]').forEach(b => { b.classList.toggle('is-active',b.dataset.modulo===nome); b.setAttribute('aria-selected',String(b.dataset.modulo===nome)); });
     apagarFlash();
     if(nome==='agenda') renderCalendario(); if(nome==='orcamentos') renderOrcamentos();
@@ -35,7 +36,7 @@
     const {data:{user:u},error} = await db.auth.getUser(); if(error) throw error;
     if(window.ClimatizeAuthFlow?.isBlockingDashboard()) return;
     user=u;
-    if(!user) { orcamentos=[]; compromissos=[]; recebimentos=[]; return; }
+    if(!user) { orcamentos=[]; compromissos=[]; recebimentos=[]; desconsiderados.clear(); return; }
     if($('app-dashboard').classList.contains('hidden')) {
       $('auth-screen').classList.add('hidden'); $('app-dashboard').classList.remove('hidden');
       if(typeof initDashboard==='function') await initDashboard();
@@ -53,6 +54,9 @@
       ]);
       for(const r of [o,a,p]) if(r.error) throw r.error;
       orcamentos=o.data||[]; compromissos=a.data||[]; recebimentos=p.data||[];
+      // Recurso de correção é opcional até a migração 02 ser homologada.
+      const excluidos=await db.from('climatize_orcamentos_desconsiderados_v2').select('orcamento_id');
+      desconsiderados=excluidos.error?new Set():new Set((excluidos.data||[]).map(x=>x.orcamento_id));
       renderOrcamentos(); renderCalendario();
     } catch(e) { erro(new Error('Não foi possível carregar os módulos v2. Confirme a migração SQL e as políticas de acesso. Detalhe: '+e.message)); }
     finally { carregando=false; }
@@ -183,7 +187,7 @@
   }
 
   // Interface de trabalho v2.3.2: somente um painel expandido, sem tocar no schema.
-  const painéisOrc=['orc-proposta-panel','orc-agenda-panel','orc-realizacao-wrap','orc-recebimento-wrap','orc-revisoes-wrap'];
+  const painéisOrc=['orc-proposta-panel','orc-agenda-panel','orc-realizacao-wrap','orc-recebimento-wrap','orc-revisoes-wrap','orc-correcao-wrap'];
   function abrirPainelOrc(id,rolar=true){
     painéisOrc.forEach(p=>{const el=$(p);if(el)el.open=p===id && !el.classList.contains('hidden');});
     if(id&&rolar)$(id).scrollIntoView({block:'start',behavior:'smooth'});
@@ -201,12 +205,12 @@
     const base=q?Number(q.total_realizado??q.total):proposta;
     const saldo=Math.max(0,cents(base-pago));
     $('orc-resumo-situacao').textContent=q?`Orçamento #${q.id.slice(0,8).toUpperCase()} · ${q.cliente_nome}`:'Nova proposta ainda não salva';
-    $('orc-resumo-status').textContent=q?(statusNome[q.status]||q.status):'Novo';
+    $('orc-resumo-status').textContent=q?(desconsiderados.has(q.id)?'Desconsiderado':(statusNome[q.status]||q.status)):'Novo';
     $('orc-resumo-proposta').textContent=dinheiro(proposta);
     $('orc-resumo-cobrado').textContent=executado?dinheiro(cobrado):'A confirmar';
     $('orc-resumo-recebido').textContent=dinheiro(pago);
     $('orc-resumo-pendente').textContent=q?dinheiro(saldo):'—';
-    $('orc-resumo-hint').textContent=!q?'Primeiro salve a proposta. Cobrança e recebimento são operações independentes.':q.status==='cancelado'?'Orçamento cancelado: execução e recebimentos estão indisponíveis.':executado?'Cobrança confirmada. Os pagamentos só aparecem aqui após registro no Financeiro.':pagamentos.length?'Sinal registrado. Execução ainda não confirmada; o saldo usa o valor da proposta.':'A execução ainda não foi confirmada; o saldo usa a proposta como referência.';
+    $('orc-resumo-hint').textContent=q&&desconsiderados.has(q.id)?'Registro de teste desconsiderado: preservado no histórico para auditoria. Não é possível registrar novos recebimentos.':!q?'Primeiro salve a proposta. Cobrança e recebimento são operações independentes.':q.status==='cancelado'?'Orçamento cancelado: execução e recebimentos estão indisponíveis.':executado?'Cobrança confirmada. Os pagamentos só aparecem aqui após registro no Financeiro.':pagamentos.length?'Sinal registrado. Execução ainda não confirmada; o saldo usa o valor da proposta.':'A execução ainda não foi confirmada; o saldo usa a proposta como referência.';
     $('orc-proposta-preview').textContent=q?`Proposta salva · ${dinheiro(proposta)} · editar ou gerar PDF`:'Cliente, serviços, valores e condições';
     $('orc-agenda-preview').textContent=q?.agendado_inicio?`Agendado para ${new Date(q.agendado_inicio).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'Abrir para agendar, alterar ou remover agendamento';
     $('orc-execucao-preview').textContent=executado?`Cobrança confirmada · ${dinheiro(cobrado)}`:'Conferir serviços e valor efetivamente cobrado';
@@ -214,8 +218,8 @@
     $('orc-pay-cobrado').textContent=dinheiro(base);
     $('orc-pay-recebido').textContent=dinheiro(pago);
     $('orc-pay-pendente').textContent=dinheiro(saldo);
-    $('orc-acao-execucao').disabled=!q||q.status==='cancelado';
-    $('orc-acao-receber').disabled=!q||q.status==='cancelado';
+    $('orc-acao-execucao').disabled=!q||q.status==='cancelado'||desconsiderados.has(q.id);
+    $('orc-acao-receber').disabled=!q||q.status==='cancelado'||desconsiderados.has(q.id);
     $('orc-overview-pdf').disabled=!q;
   }
   function erroCampoExecucao(message,el){
@@ -230,7 +234,7 @@
     $('orc-desconto').value='0';$('orc-desconto-real').value='0';$('orc-itens').replaceChildren();$('orc-itens-real').replaceChildren();
     createItem($('orc-itens'));
     $('orc-agendar').checked=false;$('orc-agendar-campos').classList.add('hidden');$('orc-conflitos').classList.add('hidden');
-    $('orc-realizacao-wrap').classList.add('hidden');$('orc-recebimento-wrap').classList.add('hidden');
+    $('orc-realizacao-wrap').classList.add('hidden');$('orc-recebimento-wrap').classList.add('hidden');$('orc-correcao-wrap').classList.add('hidden');
     $('orc-form-title').textContent='Novo orçamento';$('orc-form-wrap').classList.remove('hidden');$('orc-list-wrap').classList.add('hidden');
     $('orc-form').querySelectorAll('input,select,textarea,button').forEach(el=>el.disabled=false);
     $('orc-itens-real').querySelectorAll('input,select,button').forEach(el=>el.disabled=false);
@@ -252,9 +256,11 @@
     $('orc-list-wrap').classList.add('hidden');$('orc-form-wrap').classList.remove('hidden');
     $('orc-itens-real').replaceChildren(); (q.itens_realizados||q.itens||[]).forEach(item=>createItem($('orc-itens-real'),item,true));
     $('orc-desconto-real').value=q.itens_realizados?q.desconto_realizado:q.desconto_valor;
-    $('orc-realizacao-wrap').classList.toggle('hidden',q.status==='cancelado');
-    $('orc-recebimento-wrap').classList.toggle('hidden',q.status==='cancelado');
+    $('orc-realizacao-wrap').classList.toggle('hidden',q.status==='cancelado'||desconsiderados.has(q.id));
+    $('orc-recebimento-wrap').classList.toggle('hidden',q.status==='cancelado'||desconsiderados.has(q.id));
+    if(desconsiderados.has(q.id)){$('orc-form').querySelectorAll('input,select,textarea,button').forEach(el=>el.disabled=true);$('orc-itens-real').querySelectorAll('input,select,button').forEach(el=>el.disabled=true);}
     $('orc-pdf').disabled=false;
+    $('orc-correcao-wrap').classList.toggle('hidden',desconsiderados.has(q.id));
     const pagos=recebimentos.filter(p=>p.orcamento_id===q.id),totalPago=cents(pagos.reduce((a,p)=>a+Number(p.valor),0));
     const bloqueado=pagos.length>0;
     $('orc-itens').querySelectorAll('input,select,button').forEach(el=>el.disabled=bloqueado);
@@ -263,14 +269,15 @@
     // Pagamento adiantado não bloqueia registrar o serviço executado.
     $('orc-itens-real').querySelectorAll('input,select,button').forEach(el=>el.disabled=false);
     ['orc-add-real','orc-copiar-real','orc-desconto-real','orc-confirmar-real'].forEach(id=>$(id).disabled=false);
-    $('orc-salvar').disabled=false;
+    $('orc-salvar').disabled=desconsiderados.has(q.id);
     $('orc-status').querySelectorAll('option').forEach(opt=>opt.disabled=Boolean((bloqueado&&['rascunho','enviado','cancelado'].includes(opt.value))||(q.status==='realizado'&&opt.value!=='realizado')));
     const hist=$('orc-recebimentos');hist.replaceChildren();
     pagos.forEach(p=>{const r=document.createElement('div');r.className='payment-row';r.textContent=`${dataFormatada(p.data_recebimento)} · ${dinheiro(p.valor)} · Lançamento ${p.transacao_id}`;hist.append(r);});
     const limite=Number(q.total_realizado??q.total),pendente=cents(limite-totalPago);
     const sum=document.createElement('div');sum.className='payment-summary';sum.textContent=`Cobrado: ${dinheiro(limite)} · Recebido: ${dinheiro(totalPago)} · Em aberto: ${dinheiro(pendente)}`;hist.prepend(sum);
     $('orc-pagamento').value=pendente>0?pendente.toFixed(2):'';$('orc-pagamento').max=String(pendente);
-    $('orc-data-pagamento').value=dataLocal();$('orc-registrar-pagamento').disabled=pendente<=0;
+    $('orc-data-pagamento').value=dataLocal();$('orc-registrar-pagamento').disabled=pendente<=0||desconsiderados.has(q.id);
+    atualizarPainelCorrecao(q);
     atualizarTotais();atualizarResumoOrcamento(q);abrirPainelOrc(null,false);limparAvisoFluxo();$('orc-form-wrap').scrollIntoView({behavior:'smooth'});
     carregarRevisoes(q.id);
   }
@@ -280,16 +287,22 @@
     if($('orc-id').value!==id)return;
     if(error){destino.textContent='Histórico indisponível: '+error.message;return;}
     destino.replaceChildren();
-    if(!data?.length){destino.textContent='Nenhuma revisão anterior. Esta é a versão inicial.';return;}
-    data.forEach((rev,i)=>{const x=rev.versao_anterior||{};const div=document.createElement('div');div.className='payment-row';
+    if(!data?.length)destino.textContent='Nenhuma revisão de proposta anterior.';
+    (data||[]).forEach((rev,i)=>{const x=rev.versao_anterior||{};const div=document.createElement('div');div.className='payment-row';
       div.textContent=`${new Date(rev.registrado_em).toLocaleString('pt-BR')} · ${statusNome[x.status]||x.status||'Status desconhecido'} · proposta ${dinheiro(x.total)} · cobrado ${x.total_realizado===null?'não informado':dinheiro(x.total_realizado)} · ${Array.isArray(x.itens)?x.itens.length:0} item(ns)`;
       destino.append(div);
     });
+    const correcao=await db.from('climatize_auditoria_correcao_v2')
+      .select('criado_em,operacao,justificativa').eq('orcamento_id',id).order('criado_em',{ascending:false}).limit(30);
+    if($('orc-id').value!==id || correcao.error)return;
+    (correcao.data||[]).forEach(a=>{const div=document.createElement('div');div.className='payment-row';
+      div.textContent=`${new Date(a.criado_em).toLocaleString('pt-BR')} · ${a.operacao==='anular_recebimento_equivocado'?'Recebimento incorreto anulado':'Orçamento de teste desconsiderado'} · Motivo: ${a.justificativa}`;destino.append(div);
+    });
   }
   function renderOrcamentos() {
-    $('orc-count').textContent=String(orcamentos.length);
-    $('orc-pendente').textContent=dinheiro(orcamentos.filter(x=>!['realizado','cancelado'].includes(x.status)).reduce((s,o)=>s+Number(o.total),0));
-    $('orc-realizado').textContent=dinheiro(orcamentos.filter(x=>x.status==='realizado').reduce((s,o)=>s+Number(o.total_realizado??o.total),0));
+    $('orc-count').textContent=String(orcamentos.filter(q=>!desconsiderados.has(q.id)).length);
+    $('orc-pendente').textContent=dinheiro(orcamentos.filter(x=>!desconsiderados.has(x.id)&&!['realizado','cancelado'].includes(x.status)).reduce((s,o)=>s+Number(o.total),0));
+    $('orc-realizado').textContent=dinheiro(orcamentos.filter(x=>!desconsiderados.has(x.id)&&x.status==='realizado').reduce((s,o)=>s+Number(o.total_realizado??o.total),0));
     $('orc-recebido').textContent=dinheiro(recebimentos.reduce((s,p)=>s+Number(p.valor),0));
     const busca=$('orc-busca').value.trim().toLocaleLowerCase('pt-BR'),filtro=$('orc-filter').value;
     const result=orcamentos.filter(q=>(filtro==='todos'||q.status===filtro) && (!busca||q.cliente_nome.toLocaleLowerCase('pt-BR').includes(busca)||q.id.startsWith(busca)));
@@ -299,13 +312,49 @@
       const paid=cents(recebimentos.filter(x=>x.orcamento_id===q.id).reduce((s,x)=>s+Number(x.valor),0));
       const total=Number(q.total_realizado??q.total),diff=q.total_realizado!=null?cents(total-Number(q.total)):null;
       const el=document.createElement('article');el.className='quote-history-card';
-      el.innerHTML=`<div><span class="eyebrow">#${escapeHtml(q.id.slice(0,8).toUpperCase())} · ${dataFormatada(q.emissao)}</span><h4>${escapeHtml(q.cliente_nome)}</h4><span class="quote-status status-${escapeHtml(q.status)}">${escapeHtml(statusNome[q.status]||q.status)}</span></div><div class="history-numbers"><strong>${dinheiro(total)}</strong><small>Recebido ${dinheiro(paid)}${diff!==null?` · Diferença vs. proposta ${dinheiro(diff)}`:''}</small></div>`;
+      el.innerHTML=`<div><span class="eyebrow">#${escapeHtml(q.id.slice(0,8).toUpperCase())} · ${dataFormatada(q.emissao)}</span><h4>${escapeHtml(q.cliente_nome)}</h4><span class="quote-status status-${escapeHtml(desconsiderados.has(q.id)?'desconsiderado':q.status)}">${escapeHtml(desconsiderados.has(q.id)?'Desconsiderado':(statusNome[q.status]||q.status))}</span></div><div class="history-numbers"><strong>${dinheiro(total)}</strong><small>Recebido ${dinheiro(paid)}${diff!==null?` · Diferença vs. proposta ${dinheiro(diff)}`:''}</small></div>`;
       const actions=document.createElement('div');actions.className='history-actions';
-      const b=document.createElement('button');b.className='btn-outline';b.textContent='Abrir / editar';b.onclick=()=>abrirOrcamento(q.id);actions.append(b);
+      const b=document.createElement('button');b.className='btn-outline';b.textContent=desconsiderados.has(q.id)?'Consultar':'Abrir / editar';b.onclick=()=>abrirOrcamento(q.id);actions.append(b);
       const pdf=document.createElement('button');pdf.className='btn-outline';pdf.textContent='Baixar PDF';pdf.onclick=()=>gerarPdf(q);actions.append(pdf);
+      if(!desconsiderados.has(q.id)){const corr=document.createElement('button');corr.className='btn-outline';corr.textContent='Corrigir ou desconsiderar';corr.onclick=()=>{abrirOrcamento(q.id);abrirPainelOrc('orc-correcao-wrap');};actions.append(corr);}
       el.append(actions);lista.append(el);
     });
   }
+  function atualizarPainelCorrecao(q) {
+    const lista=$('orc-correcao-recebimento');lista.replaceChildren();
+    const p=recebimentos.filter(x=>x.orcamento_id===q.id);
+    if(!p.length){const opt=document.createElement('option');opt.textContent='Nenhum recebimento registrado';opt.value='';lista.append(opt);}
+    else p.forEach(x=>{const opt=document.createElement('option');opt.value=x.id;opt.textContent=`${dataFormatada(x.data_recebimento)} · ${dinheiro(x.valor)} · lançamento ${x.transacao_id}`;lista.append(opt);});
+    $('orc-anular-recebimento').disabled=!p.length;
+    $('orc-desconsiderar').disabled=Boolean(p.length||desconsiderados.has(q.id));
+    $('orc-correcao-status').textContent=p.length?'Para desconsiderar um orçamento de teste, primeiro anule apenas os recebimentos que nunca ocorreram de verdade.':'Sem recebimentos vinculados: um orçamento de teste pode ser desconsiderado com justificativa.';
+  }
+  async function executarCorrecao(tipo){
+    if(!activeQuote||desconsiderados.has(activeQuote.id))return;
+    const motivo=$('orc-correcao-motivo').value.trim();
+    if(motivo.length<12||motivo.length>500){$('orc-correcao-motivo').focus();return avisoFluxo('Informe o motivo da correção com pelo menos 12 caracteres.',true);}
+    if(quoteDirty)return avisoFluxo('Há alterações pendentes na proposta. Salve ou volte ao histórico antes de corrigir registros.',true);
+    const declaracao=tipo==='recebimento';
+    const mensagem=declaracao?'ATENÇÃO: Anular somente um recebimento que NÃO aconteceu de verdade. O registro original ficará preservado no log de auditoria. Confirma que nenhum dinheiro foi recebido?':'Desconsiderar este orçamento de TESTE? Ele ficará no histórico e deixará de contar nos indicadores do Climatize. Compromissos na agenda permanecem até serem removidos manualmente.';
+    if(!await ClimatizeDialog.confirm(mensagem))return;
+    const botao=$(declaracao?'orc-anular-recebimento':'orc-desconsiderar');botao.disabled=true;
+    try{
+      const id=activeQuote.id;
+      const args=declaracao?{p_recebimento_id:$('orc-correcao-recebimento').value,p_justificativa:motivo,p_declaracao_sem_pagamento_real:true}:{p_orcamento_id:id,p_justificativa:motivo};
+      const rpc=declaracao?'climatize_v2_anular_recebimento_equivoco':'climatize_v2_desconsiderar_orcamento_teste';
+      const {error}=await db.rpc(rpc,args);
+      if(error){if(/not found|schema cache|could not find|PGRST202/i.test(error.message||''))throw new Error('A correção segura ainda não foi habilitada neste aplicativo. Solicite a configuração ao suporte técnico. Nenhum registro foi alterado.');throw error;}
+      await recarregar();
+      const atual=orcamentos.find(q=>q.id===id);
+      if(!atual)throw new Error('Operação gravada, mas não foi possível carregar a lista. Atualize o aplicativo e confira o histórico antes de tentar novamente.');
+      abrirOrcamento(id);
+      avisoFluxo(declaracao?'Recebimento incorreto anulado. O histórico de auditoria foi preservado e o Financeiro deve ser atualizado.':'Orçamento de teste desconsiderado. Permanece disponível para consulta e fora dos indicadores ativos.');
+      flash(declaracao?'Correção financeira registrada. Confira os indicadores e o histórico.':'Orçamento de teste desconsiderado.');
+      if(declaracao && typeof buscarTransacoes==='function')await buscarTransacoes();
+    }catch(e){erro(e);avisoFluxo(e.message||'A correção não foi confirmada. Confira os registros antes de tentar novamente.',true);}
+    finally{botao.disabled=false;if(activeQuote && !desconsiderados.has(activeQuote.id))atualizarPainelCorrecao(activeQuote);}
+  }
+
   function getQuotePayload(uid) {
     const items=itens($('orc-itens'));
     if(!items.length||items.some(i=>!i.descricao||!Number.isFinite(i.quantidade)||i.quantidade<=0||!Number.isFinite(i.valor_unitario)||i.valor_unitario<0))throw new Error('Informe descrição, quantidade e valor válidos em todos os itens.');
@@ -507,6 +556,8 @@
     $('orc-copiar-real').onclick=()=>{$('orc-itens-real').replaceChildren();itens($('orc-itens')).forEach(x=>createItem($('orc-itens-real'),x,true));$('orc-desconto-real').value=$('orc-desconto-tipo').value==='percentual'?cents(soma(itens($('orc-itens')))*Number($('orc-desconto').value)/100):$('orc-desconto').value;atualizarTotais();};
     ['orc-desconto','orc-desconto-tipo','orc-desconto-real'].forEach(id=>$(id).addEventListener('input',atualizarTotais));
     $('orc-confirmar-real').onclick=confirmarRealizacao;$('orc-registrar-pagamento').onclick=receber;
+    $('orc-anular-recebimento').onclick=()=>executarCorrecao('recebimento');
+    $('orc-desconsiderar').onclick=()=>executarCorrecao('desconsiderar');
     $('orc-agendar').onchange=()=>$('orc-agendar-campos').classList.toggle('hidden',!$('orc-agendar').checked);
     ['orc-inicio','orc-fim'].forEach(id=>$(id).addEventListener('change',()=>{if($('orc-inicio').value&&$('orc-fim').value)validarConflito($('orc-inicio').value,$('orc-fim').value,compromissos.find(a=>a.orcamento_id===$('orc-id').value)?.id||null,'orc-conflitos');}));
     $('orc-pdf').onclick=()=>gerarPdf(activeQuote);

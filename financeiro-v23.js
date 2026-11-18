@@ -115,7 +115,7 @@ formLogin.addEventListener('submit', async (e) => {
             ? 'E-mail ou senha incorretos. Confira seus dados e tente novamente.'
             : /email not confirmed/i.test(error?.message || '')
               ? 'Seu e-mail ainda não foi confirmado. Confira sua caixa de entrada.'
-              : 'Não foi possível entrar: ' + (error?.message || 'tente novamente.');
+              : 'Não foi possível entrar agora. Confira sua conexão e tente novamente.';
         ClimatizeDialog.alert(mensagem, {titulo:'Acesso não autorizado', modo:'lock'});
     }
 });
@@ -137,7 +137,12 @@ formRegister.addEventListener('submit', async (e) => {
         showAuthForm('form-login');
         await ClimatizeDialog.alert('Cadastro solicitado! Confira seu e-mail e clique no link para confirmar sua conta. Depois, volte a esta tela para entrar.', {titulo:'Verifique seu e-mail'});
     } catch (error) {
-        ClimatizeDialog.alert("Erro no cadastro: " + error.message);
+        const aviso=/email rate limit|too many requests|rate limit/i.test(error?.message||'')
+            ? 'O envio de e-mails atingiu um limite temporário. Aguarde um pouco e tente novamente.'
+            : /user already registered|already registered|already exists/i.test(error?.message||'')
+              ? 'Este e-mail já possui cadastro. Entre ou utilize a recuperação de senha.'
+              : 'Não foi possível concluir o cadastro. Verifique os dados e tente novamente.';
+        ClimatizeDialog.alert(aviso,{titulo:'Cadastro não concluído'});
     }
 });
 
@@ -776,17 +781,14 @@ async function validarExportacao(){
         return resultado;
     }catch(e){await ClimatizeDialog.alert(e.message,{titulo:'Revise os filtros'});return null;}
 }
-// Preserva a neutralização de fórmulas e o BOM do CSV existente.
-document.getElementById('btn-export-csv').addEventListener('click',async()=>{
+// Exportação em Excel verdadeiro (.xlsx), reutilizando os filtros do PDF.
+// Textos do usuário são células de texto, nunca fórmulas executáveis.
+document.getElementById('btn-export-xlsx').addEventListener('click',async()=>{
     const selecionado=await validarExportacao();if(!selecionado)return;
-    const nome=await ClimatizeDialog.askCsvName('Climatize_Relatorio_Financeiro');if(!nome)return;
-    const celula=(v)=>{let x=String(v??'');if(/^[\s]*[=+@\-\t\r]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"';};
-    const linhas=[['Data','Tipo','Categoria','Descricao','Valor']];
-    selecionado.registros.forEach(t=>linhas.push([t.data,t.tipo,t.categoria,t.descricao||'',Number(t.valor).toFixed(2).replace('.',',')]));
-    const blob=new Blob(['\uFEFF'+linhas.map(l=>l.map(celula).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8;'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=nome;a.click();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(!window.ClimatizeXlsx){await ClimatizeDialog.alert('Exportação Excel indisponível. Atualize o aplicativo e tente novamente.');return;}
+    const nome=await ClimatizeDialog.askXlsxName('Climatize_Relatorio_Financeiro');if(!nome)return;
+    try{window.ClimatizeXlsx.baixar(selecionado,nome);}
+    catch(err){console.error('Falha ao exportar Excel:',err);await ClimatizeDialog.alert('Não foi possível gerar o arquivo Excel: '+(err.message||'Tente novamente.'));}
 });
 
 document.getElementById('btn-export-pdf').addEventListener('click',async()=>{

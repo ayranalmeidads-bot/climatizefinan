@@ -1,0 +1,31 @@
+/* Marketing — estilo da identidade enviada, isolado do financeiro e orçamentos */
+.marketing-shell{display:grid;grid-template-columns:minmax(0,.97fr) minmax(320px,1fr);gap:24px;align-items:start}
+.marketing-settings{display:flex;flex-direction:column;gap:15px;min-width:0}
+.marketing-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.marketing-field label,.correction-label{font-size:.84rem;font-weight:750;color:var(--title)}
+.marketing-field input:not([type=checkbox]),.marketing-field select,.marketing-field textarea,.correction-label textarea{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;color:var(--text);min-height:45px;padding:10px 12px;font:inherit}
+.marketing-field input[type=file]{font-size:.77rem;max-width:100%;padding:9px}
+.marketing-field small,.marketing-hint,.marketing-preview p{font-size:.76rem;line-height:1.4;color:var(--muted)}
+.marketing-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.marketing-check{display:flex;align-items:center;gap:8px;color:var(--text);font-size:.78rem}
+.marketing-check input{accent-color:var(--primary);height:18px;width:18px}
+.marketing-actions{display:flex;gap:10px;flex-wrap:wrap}
+.marketing-preview{min-width:0;display:flex;flex-direction:column;align-items:center;gap:12px;background:var(--surface-2);padding:14px;border:1px solid var(--border);border-radius:16px}
+.marketing-preview-title{width:100%;display:flex;justify-content:space-between;gap:8px;align-items:center;color:var(--title)}.marketing-preview-title small{color:var(--muted)}
+.marketing-canvas-wrap{position:relative;width:min(100%,390px);line-height:0}
+.marketing-canvas-wrap canvas{display:block;width:100%;height:auto;border-radius:9px;box-shadow:0 13px 28px #0005}
+.marketing-canvas-wrap.is-reels{width:min(100%,322px)}
+.marketing-canvas-wrap .safe-lines{display:none;position:absolute;inset:0;pointer-events:none;border-top:solid 7% transparent;border-bottom:solid 19% transparent}
+.marketing-canvas-wrap.is-reels.safe-visible .safe-lines{display:block}
+.marketing-canvas-wrap.is-reels .safe-lines:before{content:'ÁREA COBERTA PELO INSTAGRAM';position:absolute;left:0;right:0;top:8%;height:0;border-top:2px dashed #ffff66af;font:600 10px Arial;color:#fff;text-align:center}
+.marketing-canvas-wrap.is-reels .safe-lines:after{content:'ÁREA DE BOTÕES / LEGENDA — EVITE TEXTO';position:absolute;left:0;right:0;bottom:18%;height:0;border-top:2px dashed #ffff66af;font:600 10px Arial;color:#fff;text-align:center}
+.correction-warning{border-left:4px solid var(--accent);background:var(--surface-2);border-radius:9px;padding:12px;color:var(--text);font-size:.88rem}
+.correction-label{display:flex;flex-direction:column;gap:9px}.quote-correction-panel{margin-top:14px}.correction-audit{font-size:.75rem;color:var(--muted)}
+@media(max-width:780px){.marketing-shell{grid-template-columns:1fr}.marketing-grid2{grid-template-columns:1fr}.marketing-preview{padding:12px}.marketing-canvas-wrap{width:min(100%,380px)}.marketing-preview-title{font-size:.88rem}}
+@media(max-width:430px){.marketing-actions>*{flex:1}.module-nav{overflow-x:auto;max-width:100%;scrollbar-width:thin}.module-tab{flex:0 0 auto}.marketing-shell{padding:14px}}
+/* Quatro destinos ficam sempre visíveis na barra inferior, sem rolagem lateral. */
+@media(max-width:540px){
+ .module-nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding-inline:7px;overflow:visible}
+ .module-tab{font-size:.65rem;padding:7px 2px;min-width:0;min-height:54px}
+ .module-tab svg{width:19px;height:19px}
+}

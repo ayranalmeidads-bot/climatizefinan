@@ -5,10 +5,11 @@
 <script>(function(){try{var saved=localStorage.getItem("climatize_theme_v21");document.documentElement.dataset.theme=saved==="dark"||saved==="light"?saved:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");}catch(e){document.documentElement.dataset.theme="light"}})();</script><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Climatize · Gestão Inteligente</title>
-<meta name="climatize-build" content="2.3.5-20261117"/>
+<meta name="climatize-build" content="2.4.1-20261118"/>
 <!-- CSS Principal -->
 <link href="ui-v23.css?v=20261117.2340" rel="stylesheet"/>
 <link href="legal.css?v=20261117.2350" rel="stylesheet"/>
+<link href="marketing.css?v=20261118.2400" rel="stylesheet"/><link href="control-v24.css?v=20261118.2400" rel="stylesheet"/>
 <!-- PWA Manifest -->
 <link href="manifest.json?v=20261114.22" rel="manifest"/>
 <!-- Chart.js para Gráficos -->
@@ -104,7 +105,8 @@
 <nav aria-label="Navegação principal" class="module-nav" role="tablist">
 <button aria-controls="modulo-financeiro" aria-selected="true" class="module-tab is-active" data-modulo="financeiro" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="18" rx="3" width="18" x="3" y="3"></rect><path d="M3 9h18M9 21V9M13 14h4"></path></svg><span>Financeiro</span></button>
 <button aria-controls="modulo-agenda" aria-selected="false" class="module-tab" data-modulo="agenda" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="16" rx="3" width="18" x="3" y="5"></rect><path d="M7 3v4M17 3v4M3 10h18M8 14h3M8 17h3"></path></svg><span>Agenda</span></button>
-<button aria-controls="modulo-orcamentos" aria-selected="false" class="module-tab" data-modulo="orcamentos" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M7 3h10l4 4v14H3V3h4zM16 3v5h5M7 12h10M7 16h10"></path></svg><span>Orçamentos</span></button></nav>
+<button aria-controls="modulo-orcamentos" aria-selected="false" class="module-tab" data-modulo="orcamentos" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M7 3h10l4 4v14H3V3h4zM16 3v5h5M7 12h10M7 16h10"></path></svg><span>Orçamentos</span></button>
+<button aria-controls="modulo-marketing" aria-selected="false" class="module-tab" data-modulo="marketing" role="tab" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m3 17 5-5 4 4 4-6 5 6"/></svg><span>Marketing</span></button></nav>
 <div aria-live="polite" class="app-flash hidden" id="app-flash" role="status"></div>
 <section id="legal-ack-banner" class="legal-ack-banner hidden" aria-label="Atualização dos termos" aria-live="polite"><div><strong>Transparência no Climatize</strong><p>Atualizamos os <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a> para explicar o uso interno e a proteção dos dados.</p><label><input type="checkbox" id="legal-ack-check"> Li os Termos e estou ciente da Política de Privacidade.</label><p class="legal-ack-status hidden" id="legal-ack-status" role="status"></p></div><button type="button" id="legal-ack-button" class="btn-primary" disabled>Registrar ciência</button></section>
 <main aria-label="Financeiro" class="main-content" id="modulo-financeiro" role="tabpanel"><section class="finance-hero"><div class="finance-hero-copy"><span class="eyebrow"><span class="eyebrow-dot"></span> PAINEL FINANCEIRO</span><h1>Controle que dá <em>tranquilidade.</em></h1><p>Seu fluxo de caixa, serviços e próximos passos em um só lugar.</p><span class="hero-date" id="hero-date"></span></div><div class="hero-actions"><button class="btn-hero" data-scroll-to="card-novo-lancamento" type="button">+ Novo lançamento</button><button class="btn-hero-ghost" data-go-module="orcamentos" type="button">Criar orçamento <span aria-hidden="true">↗</span></button></div><div aria-hidden="true" class="hero-halo"></div></section>
@@ -234,7 +236,7 @@
 <button type="button" class="btn-outline" id="export-limpar">Limpar filtros</button>
 </details>
 <div class="btn-group">
-<button class="btn-outline" id="btn-export-csv">Exportar Excel (CSV)</button>
+<button class="btn-outline" id="btn-export-xlsx">Baixar Excel (.xlsx)</button>
 <button class="btn-outline" id="btn-export-pdf">Exportar Relatório PDF</button>
 </div>
 </section></main>
@@ -299,14 +301,59 @@
 <div class="form-two"><label>Valor recebido (R$)<input id="orc-pagamento" min="0.01" placeholder="0,00" step="0.01" type="number"/></label><label>Data do recebimento<input id="orc-data-pagamento" type="date"/></label></div><button class="btn-primary" id="orc-registrar-pagamento" type="button">Confirmar pagamento e lançar no Financeiro</button><button class="btn-outline quote-goto-finance" id="orc-ver-financeiro" type="button">Ver histórico do Financeiro</button>
 </div></div></details>
 <details class="quote-work-panel quote-revision-panel" id="orc-revisoes-wrap"><summary><span class="quote-step-icon">05</span><span class="quote-step-copy"><strong>Histórico de alterações</strong><small>Versões e revisões registradas</small></span><span class="quote-step-chevron" aria-hidden="true">⌄</span></summary><div class="quote-panel-body"><div class="item-stack" id="orc-revisoes"></div></div></details>
+<details class="quote-work-panel quote-correction-panel hidden" id="orc-correcao-wrap"><summary><span class="quote-step-icon">06</span><span class="quote-step-copy"><strong>Corrigir ou desconsiderar</strong><small>Para lançamentos de teste ou recebimentos registrados por engano</small></span><span class="quote-step-chevron" aria-hidden="true">⌄</span></summary><div class="quote-panel-body">
+<p class="correction-warning">Esta opção serve para corrigir <strong>um registro feito por engano</strong>. Não significa reembolso de dinheiro recebido de verdade. As correções exigem justificativa e ficam auditadas.</p>
+<label class="correction-label" for="orc-correcao-motivo">Motivo da correção (mínimo de 12 caracteres)<textarea id="orc-correcao-motivo" maxlength="500" rows="3" placeholder="Ex.: Orçamento criado para teste; nenhum pagamento real aconteceu."></textarea></label>
+<div class="marketing-field"><label for="orc-correcao-recebimento">Recebimento registrado por engano</label><select id="orc-correcao-recebimento"></select></div>
+<div class="form-actions"><button class="btn-outline" type="button" id="orc-anular-recebimento">Anular recebimento incorreto</button><button class="btn-text-danger" type="button" id="orc-desconsiderar">Desconsiderar orçamento de teste</button></div>
+<p class="auth-helper">Somente lançamentos comprovadamente incorretos podem ser anulados. Para pagamentos reais que precisam ser devolvidos, registre a devolução por procedimento financeiro apropriado.</p>
+<p id="orc-correcao-status" class="auth-helper" role="status" aria-live="polite"></p>
+</div></details>
 </section>
 </main>
-<footer class="cl-copyright" aria-label="Direitos autorais">© 2026 ayrandev <span aria-hidden="true">·</span> <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a> <span aria-hidden="true">·</span> <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Privacidade e LGPD</a></footer>
+<!-- Marketing isolado: composição gráfica local; não envia fotos ao Supabase -->
+<main aria-label="Marketing" class="main-content hidden" id="modulo-marketing" role="tabpanel">
+<section class="module-heading"><div><span class="eyebrow">Divulgação de serviços</span><h1>Marketing</h1><p>Monte posts e encerramentos de Reels com as fotos dos serviços. As imagens permanecem neste dispositivo.</p></div></section>
+<section class="marketing-shell card-section" aria-label="Editor de artes">
+<div class="marketing-settings">
+<div class="marketing-field"><label for="mkt-layout">Escolha a moldura</label><select id="mkt-layout">
+<option value="1">01 · Feed: Serviço em destaque</option><option value="2">02 · Feed: Antes e depois</option><option value="3">03 · Feed: Mosaico</option>
+<option value="4">04 · Reels: Serviço concluído</option><option value="5">05 · Reels: Serviços e contato</option><option value="6">06 · Reels: Marca e confiança</option>
+</select><small id="mkt-model-caption">Formatos automáticos: feed 1080 × 1350 e final Reels 1080 × 1920.</small></div>
+<input type="hidden" id="mkt-formato" value="feed" />
+<div class="marketing-field"><label for="mkt-fotos">Fotos do trabalho (até 4)</label><input id="mkt-fotos" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple/><small>Na opção “Antes e depois”, selecione primeiro a foto de antes e depois a foto de depois. Nada é enviado à nuvem.</small></div>
+<div class="marketing-field"><label for="mkt-photo-slot">Foto que deseja editar</label><select id="mkt-photo-slot"><option value="0">Foto 1</option></select><small>Toque ou arraste a imagem na prévia para reposicioná-la; use dois dedos para dar zoom.</small></div>
+<div class="mkt-controls" aria-label="Ajustes da foto selecionada">
+<div class="marketing-field"><label for="mkt-zoom">Zoom</label><input id="mkt-zoom" type="range" min="100" max="300" value="100" /></div>
+<div class="marketing-field"><label for="mkt-bright">Brilho</label><input id="mkt-bright" type="range" min="50" max="160" value="100" /></div>
+<div class="marketing-field"><label for="mkt-contrast">Contraste</label><input id="mkt-contrast" type="range" min="50" max="170" value="100" /></div>
+<div class="marketing-field"><label for="mkt-sat">Saturação</label><input id="mkt-sat" type="range" min="0" max="200" value="100" /></div>
+<div class="marketing-field"><label for="mkt-warm">Temperatura / cor</label><input id="mkt-warm" type="range" min="-50" max="50" value="0" /></div>
+<div class="marketing-field"><label for="mkt-high">Destaques</label><input id="mkt-high" type="range" min="-40" max="40" value="0" /></div>
+<div class="marketing-field"><label for="mkt-rotate">Girar foto</label><select id="mkt-rotate"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
+<button type="button" class="btn-outline" id="mkt-restore">Restaurar ajustes desta foto</button>
+</div>
+<div class="marketing-field"><label for="mkt-titulo">Título</label><input id="mkt-titulo" value="SERVIÇO CONCLUÍDO" maxlength="58"/></div>
+<div class="marketing-field"><label for="mkt-subtitulo">Descrição curta</label><textarea id="mkt-subtitulo" rows="2" maxlength="140">Instalação • Manutenção • Higienização</textarea></div>
+<div class="marketing-grid2"><div class="marketing-field"><label for="mkt-responsavel">Nome para contato</label><input id="mkt-responsavel" value="Allyson Rener" maxlength="52"/></div><div class="marketing-field"><label for="mkt-contato">Telefone / WhatsApp</label><input id="mkt-contato" type="tel" value="(77) 99877-7658" maxlength="38"/></div></div>
+<div class="marketing-field"><label for="mkt-chamada">Chamada final</label><input id="mkt-chamada" value="Solicite seu orçamento!" maxlength="65"/></div>
+<div class="marketing-grid2"><label class="marketing-check"><input id="mkt-logo" type="checkbox" checked/> Mostrar logo</label><label class="marketing-check"><input id="mkt-seguranca" type="checkbox" checked/> Guias de segurança no preview do Reels</label></div>
+<div class="marketing-field"><label for="mkt-logo-file">Substituir logo (opcional)</label><input id="mkt-logo-file" type="file" accept="image/jpeg,image/png,image/webp"/><small>Use a identidade da empresa somente com autorização do titular da marca.</small></div>
+<div class="marketing-actions"><button class="btn-primary" type="button" id="mkt-download">Baixar arte PNG</button><button class="btn-outline" type="button" id="mkt-reset">Limpar fotos</button></div>
+<p class="marketing-hint" id="mkt-status" role="status" aria-live="polite">Prévia pronta para personalizar.</p>
+</div>
+<div class="marketing-preview"><div class="marketing-preview-title"><strong>Pré-visualização</strong><small id="mkt-dimensoes">1080 × 1350 px</small></div><div class="marketing-canvas-wrap"><canvas id="mkt-canvas" width="1080" height="1350" aria-label="Prévia da arte gerada para download"></canvas><div class="safe-lines" aria-hidden="true"></div></div><p>O Reels pode exibir botões e legendas sobre as bordas. As guias são apenas visuais e não entram no PNG.</p></div>
+</section>
+</main>
+<footer class="cl-copyright" aria-label="Direitos autorais">Climatize · Ferramenta de apoio operacional <span aria-hidden="true">·</span> Uso restrito <span aria-hidden="true">·</span> <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a> <span aria-hidden="true">·</span> <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Privacidade e LGPD</a> <span aria-hidden="true">·</span> <a href="mailto:ayranalmeidads@gmail.com">Suporte técnico</a></footer>
 </div>
 <!-- Script Principal JS -->
-<script src="dialogos-v23.js?v=20261117.2340"></script>
-<script src="financeiro-v23.js?v=20261117.2340"></script>
-<script src="modulos-v23.js?v=20261117.2340"></script>
+<script src="dialogos-v23.js?v=20261118.2410"></script>
+<script src="excel-v24.js?v=20261118.2410"></script>
+<script src="financeiro-v23.js?v=20261118.2410"></script>
+<script src="modulos-v23.js?v=20261118.2370"></script>
 <script src="interface-v23.js?v=20261117.2340"></script>
+<script src="marketing.js?v=20261118.2400" defer></script>
+<script src="control-v24.js?v=20261118.2400" defer></script>
 <script src="legal-ack.js?v=20261117.2350" defer></script></body>
 </html>
