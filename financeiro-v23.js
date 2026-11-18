@@ -6,6 +6,8 @@ const SUPABASE_KEY = "sb_publishable_XRwRbPVyeDggyeYcbA0fQQ_ImSkKoi6";
 // CLIMATIZE 2.3.3: somente redirecionamentos públicos de cadastro e recuperação.
 // O endereço HTTPS é explícito: nunca enviar e-mail com retorno ao localhost.
 const CLIMATIZE_AUTH_URL = 'https://ayranalmeidads-bot.github.io/climatizefinan/index.html';
+// Recuperação usa uma página independente: evita abertura do dashboard antes da nova senha.
+const CLIMATIZE_PASSWORD_RESET_URL = 'https://ayranalmeidads-bot.github.io/climatizefinan/reset-password.html';
 const climatizeReturnURL = new URL(window.location.href);
 const climatizeReturnQuery = climatizeReturnURL.searchParams;
 const climatizeReturnHash = new URLSearchParams(climatizeReturnURL.hash.slice(1));
@@ -187,7 +189,7 @@ document.getElementById('form-recovery-email').addEventListener('submit',async(e
     btn.disabled=true;
     try {
         if(!supabase10) throw new Error('Serviço de autenticação indisponível.');
-        const {error}=await supabase10.auth.resetPasswordForEmail(email,{redirectTo:`${CLIMATIZE_AUTH_URL}?auth_action=recovery`});
+        const {error}=await supabase10.auth.resetPasswordForEmail(email,{redirectTo:CLIMATIZE_PASSWORD_RESET_URL});
         if(error) throw error;
         authFeedback('recovery-email-feedback','Se o e-mail estiver cadastrado, você receberá um link para criar uma nova senha. Confira também a pasta de spam.');
     }catch(err){
@@ -246,7 +248,6 @@ async function handleAuthReturn() {
         if(kind==='recovery'){
             ClimatizeAuthFlow.validated=true;
             authCleanURL(); // Remove os parâmetros do link após validação.
-            authCleanURL(); // Remove os parâmetros do link após validação.
             document.getElementById('recovery-link-status').textContent='Link validado. Escolha uma senha nova com pelo menos 8 caracteres.';
             ['recovery-new-password','recovery-confirm-password','btn-update-recovery'].forEach(id=>document.getElementById(id).disabled=false);
             showAuthForm('form-recovery-password');
@@ -262,6 +263,12 @@ async function handleAuthReturn() {
         authCleanURL();
         showAuthResult('Não foi possível validar o link','O link pode ter expirado ou já ter sido utilizado. Solicite um novo link ou tente entrar pelo login.',kind==='recovery');
     }
+}
+// Mensagem de retorno após concluir a troca na página dedicada.
+if (climatizeReturnQuery.get('auth_reset') === 'success') {
+    const aviso = document.getElementById('login-reset-status');
+    if (aviso) { aviso.textContent = 'Senha alterada com sucesso! Entre usando sua nova senha.'; aviso.classList.remove('hidden'); }
+    authCleanURL();
 }
 // Inicializado após os formulários e cliente Auth; não modifica módulos financeiros.
 handleAuthReturn().catch(err=>{console.error('Falha no retorno de autenticação:',err);showAuthResult('Falha de autenticação','Tente novamente ou solicite um novo link.',true);});
