@@ -30,8 +30,10 @@
     if(nome==='agenda') renderCalendario(); if(nome==='orcamentos') renderOrcamentos();
   }
   async function sessao() {
+    if(window.ClimatizeAuthFlow?.isBlockingDashboard()) return;
     if(!db) return;
     const {data:{user:u},error} = await db.auth.getUser(); if(error) throw error;
+    if(window.ClimatizeAuthFlow?.isBlockingDashboard()) return;
     user=u;
     if(!user) { orcamentos=[]; compromissos=[]; recebimentos=[]; return; }
     if($('app-dashboard').classList.contains('hidden')) {
@@ -513,7 +515,7 @@
   }
   listeners();
   if(db){
-    db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session?.user){setTimeout(()=>sessao().catch(erro),0);}else if(event==='SIGNED_OUT'){user=null;orcamentos=[];compromissos=[];recebimentos=[];}});
-    db.auth.getSession().then(({data})=>{if(data?.session)sessao().catch(erro);}).catch(erro);
+    db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session?.user&&!window.ClimatizeAuthFlow?.isBlockingDashboard()){setTimeout(()=>sessao().catch(erro),0);}else if(event==='SIGNED_OUT'){user=null;orcamentos=[];compromissos=[];recebimentos=[];}});
+    db.auth.getSession().then(({data})=>{if(data?.session&&!window.ClimatizeAuthFlow?.isBlockingDashboard())sessao().catch(erro);}).catch(erro);
   } else flash('Biblioteca Supabase indisponível.',true);
 })();

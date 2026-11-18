@@ -5,9 +5,9 @@
 <script>(function(){try{var saved=localStorage.getItem("climatize_theme_v21");document.documentElement.dataset.theme=saved==="dark"||saved==="light"?saved:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");}catch(e){document.documentElement.dataset.theme="light"}})();</script><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Climatize · Gestão Inteligente</title>
-<meta name="climatize-build" content="2.3.2-20261117"/>
+<meta name="climatize-build" content="2.3.3-20261117"/>
 <!-- CSS Principal -->
-<link href="ui-v23.css?v=20261117.2321" rel="stylesheet"/>
+<link href="ui-v23.css?v=20261117.2331" rel="stylesheet"/>
 <!-- PWA Manifest -->
 <link href="manifest.json?v=20261114.22" rel="manifest"/>
 <!-- Chart.js para Gráficos -->
@@ -40,6 +40,7 @@
 <input id="login-email" placeholder="E-mail" required="" type="email"/>
 <input id="login-senha" placeholder="Senha" required="" type="password"/>
 <button class="btn-primary" type="submit">Entrar</button>
+<p class="toggle-text"><a href="#" id="go-to-recovery">Esqueci minha senha</a></p>
 <p class="toggle-text">Ainda não tem conta? <a href="#" id="go-to-register">Cadastre-se</a></p>
 </form>
 <!-- Formulário de Cadastro -->
@@ -60,6 +61,34 @@
 <button class="btn-primary" type="submit">Cadastrar</button>
 <p class="toggle-text">Já tem uma conta? <a href="#" id="go-to-login">Fazer Login</a></p>
 </form>
+<!-- Recuperação pública: solicitar link sem revelar se o usuário existe -->
+<form class="auth-form" id="form-recovery-email">
+<h3>Recuperar acesso</h3>
+<p class="auth-helper">Informe seu e-mail cadastrado. Enviaremos um link para você criar uma nova senha.</p>
+<label for="recovery-email" class="auth-field-label">E-mail</label>
+<input id="recovery-email" type="email" autocomplete="email" placeholder="Seu e-mail cadastrado" required maxlength="254"/>
+<button class="btn-primary" type="submit" id="btn-send-recovery">Enviar link de recuperação</button>
+<p id="recovery-email-feedback" class="auth-feedback hidden" role="status" aria-live="polite"></p>
+<p class="toggle-text"><a href="#" id="go-to-login-from-recovery">Voltar ao login</a></p>
+</form>
+<!-- Aberto somente a partir de um link válido do Supabase Auth -->
+<form class="auth-form" id="form-recovery-password">
+<h3>Criar nova senha</h3>
+<p id="recovery-link-status" class="auth-helper" role="status" aria-live="polite">Validando seu link de recuperação…</p>
+<label for="recovery-new-password" class="auth-field-label">Nova senha</label>
+<input id="recovery-new-password" type="password" autocomplete="new-password" placeholder="Mínimo de 8 caracteres" required minlength="8" maxlength="256" disabled/>
+<label for="recovery-confirm-password" class="auth-field-label">Confirmar nova senha</label>
+<input id="recovery-confirm-password" type="password" autocomplete="new-password" placeholder="Repita a nova senha" required minlength="8" maxlength="256" disabled/>
+<button class="btn-primary" type="submit" id="btn-update-recovery" disabled>Salvar nova senha</button>
+<p id="recovery-password-feedback" class="auth-feedback hidden" role="alert"></p>
+<p class="toggle-text"><a href="#" id="cancel-recovery">Cancelar e voltar ao login</a></p>
+</form>
+<div class="auth-form" id="auth-link-result" role="status" aria-live="polite">
+<h3 id="auth-result-title">Confirmação de e-mail</h3>
+<p id="auth-result-text" class="auth-helper"></p>
+<button class="btn-primary" type="button" id="auth-result-login">Ir para o login</button>
+<p class="toggle-text"><a href="#" id="auth-result-new-link" class="hidden">Solicitar outro link</a></p>
+</div>
 </div>
 </section>
 <!-- ========================================== -->
@@ -273,8 +302,8 @@
 <footer class="cl-copyright" aria-label="Direitos autorais">© 2026 ayrandev</footer>
 </div>
 <!-- Script Principal JS -->
-<script src="dialogos-v23.js?v=20261117.2321"></script>
-<script src="financeiro-v23.js?v=20261117.2321"></script>
-<script src="modulos-v23.js?v=20261117.2321"></script>
-<script src="interface-v23.js?v=20261117.2321"></script></body>
+<script src="dialogos-v23.js?v=20261117.2331"></script>
+<script src="financeiro-v23.js?v=20261117.2331"></script>
+<script src="modulos-v23.js?v=20261117.2331"></script>
+<script src="interface-v23.js?v=20261117.2331"></script></body>
 </html>

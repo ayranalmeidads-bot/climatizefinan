@@ -3,6 +3,23 @@
 // ==========================================
 const SUPABASE_URL = "https://ditkzuoqdgxkziwjkege.supabase.co";
 const SUPABASE_KEY = "sb_publishable_XRwRbPVyeDggyeYcbA0fQQ_ImSkKoi6";
+// CLIMATIZE 2.3.3: somente redirecionamentos públicos de cadastro e recuperação.
+// O endereço HTTPS é explícito: nunca enviar e-mail com retorno ao localhost.
+const CLIMATIZE_AUTH_URL = 'https://ayranalmeidads-bot.github.io/climatizefinan/index.html';
+const climatizeReturnURL = new URL(window.location.href);
+const climatizeReturnQuery = climatizeReturnURL.searchParams;
+const climatizeReturnHash = new URLSearchParams(climatizeReturnURL.hash.slice(1));
+const climatizeReturnKind = climatizeReturnQuery.get('auth_action') === 'recovery' || climatizeReturnHash.get('type') === 'recovery' ? 'recovery'
+    : climatizeReturnQuery.get('auth_action') === 'confirmed' || ['signup','email'].includes(climatizeReturnHash.get('type')) ? 'confirmed' : null;
+const ClimatizeAuthFlow = {
+    kind: climatizeReturnKind,
+    hasProof: Boolean(climatizeReturnQuery.get('code') || climatizeReturnQuery.get('token_hash') || climatizeReturnHash.get('access_token')),
+    tokenHash: climatizeReturnQuery.get('token_hash'),
+    linkError: climatizeReturnQuery.get('error') || climatizeReturnHash.get('error') || climatizeReturnQuery.get('error_code') || climatizeReturnHash.get('error_code'),
+    blocking: Boolean(climatizeReturnKind),
+    isBlockingDashboard() { return this.blocking; }
+};
+window.ClimatizeAuthFlow = ClimatizeAuthFlow;
 const supabase10 = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // Categorias específicas fornecidas pelo usuário
@@ -31,6 +48,23 @@ const linkGoRegister = document.getElementById('go-to-register');
 const linkGoLogin = document.getElementById('go-to-login');
 const btnLogout = document.getElementById('btn-logout');
 
+// Login, cadastro e recuperação compartilham o mesmo cartão, sem nova página.
+const authForms = ['form-login','form-register','form-recovery-email','form-recovery-password','auth-link-result'];
+function showAuthForm(id) {
+    authForms.forEach(name => document.getElementById(name).classList.toggle('active',name===id));
+    screenAuth.classList.remove('hidden');
+    appDashboard.classList.add('hidden');
+}
+function authCleanURL() {
+    const url=new URL(window.location.href); url.search=''; url.hash='';
+    window.history.replaceState(null,'',url.href);
+}
+function authFeedback(id, message, danger=false) {
+    const el=document.getElementById(id); el.textContent=message;
+    el.classList.remove('hidden'); el.classList.toggle('auth-error',danger);
+}
+
+
 // ==========================================
 // ATUALIZAÇÃO DINÂMICA DE CATEGORIAS
 // ==========================================
@@ -54,14 +88,12 @@ selectTipo.addEventListener('change', atualizarOpcoesCategorias);
 // ==========================================
 linkGoRegister.addEventListener('click', (e) => {
     e.preventDefault();
-    formLogin.classList.remove('active');
-    formRegister.classList.add('active');
+    showAuthForm('form-register');
 });
 
 linkGoLogin.addEventListener('click', (e) => {
     e.preventDefault();
-    formRegister.classList.remove('active');
-    formLogin.classList.add('active');
+    showAuthForm('form-login');
 });
 
 formLogin.addEventListener('submit', async (e) => {
@@ -96,13 +128,12 @@ formRegister.addEventListener('submit', async (e) => {
         const { error } = await supabase10.auth.signUp({ 
             email, 
             password: senha,
-            options: { data: { nome: nome } }
+            options: { data: { nome: nome }, emailRedirectTo: `${CLIMATIZE_AUTH_URL}?auth_action=confirmed` }
         });
         if (error) throw error;
 
-        ClimatizeDialog.alert(`Usuário ${nome} registrado com sucesso! Faça seu login.`);
-        formRegister.classList.remove('active');
-        formLogin.classList.add('active');
+        showAuthForm('form-login');
+        await ClimatizeDialog.alert('Cadastro solicitado! Confira seu e-mail e clique no link para confirmar sua conta. Depois, volte a esta tela para entrar.', {titulo:'Verifique seu e-mail'});
     } catch (error) {
         ClimatizeDialog.alert("Erro no cadastro: " + error.message);
     }
@@ -113,6 +144,127 @@ btnLogout.addEventListener('click', async () => {
     appDashboard.classList.add('hidden');
     screenAuth.classList.remove('hidden');
 });
+
+// ==========================================
+// CONFIRMAÇÃO DE E-MAIL E RECUPERAÇÃO DE SENHA — 2.3.3
+// ==========================================
+function showAuthResult(titulo,mensagem,novoLink=false) {
+    document.getElementById('auth-result-title').textContent=titulo;
+    document.getElementById('auth-result-text').textContent=mensagem;
+    document.getElementById('auth-result-new-link').classList.toggle('hidden',!novoLink);
+    showAuthForm('auth-link-result');
+}
+async function finishAuthEntry(showMessage=true) {
+    // Forçar logout para que a confirmação e a recuperação terminem no login.
+    if(supabase10){
+        const {error}=await supabase10.auth.signOut({scope:'local'});
+        if(error) throw error;
+    }
+    ClimatizeAuthFlow.blocking=false;
+    ClimatizeAuthFlow.kind=null;
+    authCleanURL();
+    showAuthForm('form-login');
+    document.getElementById('login-senha').value='';
+    if(showMessage) await ClimatizeDialog.alert('Volte a entrar com seu e-mail e a nova senha.',{titulo:'Voltar ao login',modo:'lock'});
+}
+
+document.getElementById('go-to-recovery').addEventListener('click',(e)=>{
+    e.preventDefault();
+    document.getElementById('recovery-email').value=document.getElementById('login-email').value.trim();
+    document.getElementById('recovery-email-feedback').classList.add('hidden');
+    showAuthForm('form-recovery-email');
+});
+document.getElementById('go-to-login-from-recovery').addEventListener('click',(e)=>{e.preventDefault();showAuthForm('form-login');});
+document.getElementById('auth-result-new-link').addEventListener('click',(e)=>{e.preventDefault();finishAuthEntry(false).then(()=>showAuthForm('form-recovery-email'));});
+document.getElementById('auth-result-login').addEventListener('click',()=>finishAuthEntry(false));
+document.getElementById('cancel-recovery').addEventListener('click',(e)=>{e.preventDefault();finishAuthEntry(false);});
+
+document.getElementById('form-recovery-email').addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    const btn=document.getElementById('btn-send-recovery');
+    const email=document.getElementById('recovery-email').value.trim();
+    if(!email) return;
+    btn.disabled=true;
+    try {
+        if(!supabase10) throw new Error('Serviço de autenticação indisponível.');
+        const {error}=await supabase10.auth.resetPasswordForEmail(email,{redirectTo:`${CLIMATIZE_AUTH_URL}?auth_action=recovery`});
+        if(error) throw error;
+        authFeedback('recovery-email-feedback','Se o e-mail estiver cadastrado, você receberá um link para criar uma nova senha. Confira também a pasta de spam.');
+    }catch(err){
+        console.error('Falha ao solicitar recuperação:',err?.message);
+        authFeedback('recovery-email-feedback',/rate limit|too many/i.test(err?.message||'')?'Muitas tentativas. Aguarde alguns minutos antes de solicitar outro link.':'Não foi possível enviar a solicitação agora. Tente novamente.',true);
+    }finally{btn.disabled=false;}
+});
+
+document.getElementById('form-recovery-password').addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    const senha=document.getElementById('recovery-new-password').value;
+    const confirma=document.getElementById('recovery-confirm-password').value;
+    if(!ClimatizeAuthFlow.blocking || ClimatizeAuthFlow.kind!=='recovery' || !ClimatizeAuthFlow.validated){
+        return authFeedback('recovery-password-feedback','Link de recuperação não validado. Solicite um novo link.',true);
+    }
+    if(senha.length<8 || senha!==confirma){
+        return authFeedback('recovery-password-feedback',senha.length<8?'A nova senha deve ter pelo menos 8 caracteres.':'As senhas não coincidem.',true);
+    }
+    const btn=document.getElementById('btn-update-recovery');btn.disabled=true;
+    let senhaAtualizada=false;
+    try{
+        const {error}=await supabase10.auth.updateUser({password:senha});
+        if(error) throw error;
+        senhaAtualizada=true;
+        document.getElementById('recovery-new-password').value='';
+        document.getElementById('recovery-confirm-password').value='';
+        // Confirmado pelo Auth, não efetuar login automático nem entrar no dashboard.
+        await finishAuthEntry(false);
+        await ClimatizeDialog.alert('Sua senha foi alterada! Entre com seu e-mail e a nova senha.',{titulo:'Senha atualizada',modo:'lock'});
+    }catch(err){
+        console.error('Falha ao redefinir senha:',err?.message);
+        authFeedback('recovery-password-feedback',senhaAtualizada?'Sua nova senha foi salva, mas não foi possível encerrar a sessão automaticamente. Tente voltar ao login; se continuar, feche o aplicativo e abra novamente.':'Não foi possível salvar a nova senha. Confira as regras de senha e tente novamente.',true);
+    }finally{btn.disabled=false;}
+});
+
+async function handleAuthReturn() {
+    if(!ClimatizeAuthFlow.blocking) return;
+    const kind=ClimatizeAuthFlow.kind;
+    showAuthForm(kind==='recovery'?'form-recovery-password':'auth-link-result');
+    if(ClimatizeAuthFlow.linkError || !ClimatizeAuthFlow.hasProof){
+        authCleanURL();
+        showAuthResult('Link inválido ou expirado','Este link não pôde ser validado. Solicite um novo link de recuperação ou tente entrar com suas credenciais.',kind==='recovery');
+        return;
+    }
+    try{
+        if(!supabase10) throw new Error('Serviço indisponível');
+        if(ClimatizeAuthFlow.tokenHash){
+            const {error}=await supabase10.auth.verifyOtp({token_hash:ClimatizeAuthFlow.tokenHash,type:kind==='recovery'?'recovery':'email'});
+            if(error) throw error;
+        }
+        // getSession espera o processamento do callback OAuth/OTP pelo Supabase JS.
+        const {data:{session},error:sessionError}=await supabase10.auth.getSession();
+        if(sessionError || !session) throw sessionError||new Error('Sessão do link não encontrada.');
+        const {data:{user},error:userError}=await supabase10.auth.getUser();
+        if(userError || !user) throw userError||new Error('Link sem usuário válido.');
+        if(kind==='recovery'){
+            ClimatizeAuthFlow.validated=true;
+            authCleanURL(); // Remove os parâmetros do link após validação.
+            authCleanURL(); // Remove os parâmetros do link após validação.
+            document.getElementById('recovery-link-status').textContent='Link validado. Escolha uma senha nova com pelo menos 8 caracteres.';
+            ['recovery-new-password','recovery-confirm-password','btn-update-recovery'].forEach(id=>document.getElementById(id).disabled=false);
+            showAuthForm('form-recovery-password');
+        }else{
+            // A confirmação não deve fazer login automático, mesmo que o Supabase crie sessão.
+            const {error:logoutError}=await supabase10.auth.signOut({scope:'local'});
+            if(logoutError) throw logoutError;
+            authCleanURL();
+            showAuthResult('E-mail confirmado','Sua conta foi confirmada. Clique abaixo para entrar no Climatize com seu e-mail e senha.');
+        }
+    }catch(err){
+        console.warn('Retorno de autenticação não validado:',err?.message);
+        authCleanURL();
+        showAuthResult('Não foi possível validar o link','O link pode ter expirado ou já ter sido utilizado. Solicite um novo link ou tente entrar pelo login.',kind==='recovery');
+    }
+}
+// Inicializado após os formulários e cliente Auth; não modifica módulos financeiros.
+handleAuthReturn().catch(err=>{console.error('Falha no retorno de autenticação:',err);showAuthResult('Falha de autenticação','Tente novamente ou solicite um novo link.',true);});
 
 // ==========================================
 // MÓDULO FINANCEIRO (DASHBOARD)

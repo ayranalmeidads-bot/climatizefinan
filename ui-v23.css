@@ -336,3 +336,10 @@ html[data-theme="dark"] .cl-modal{color-scheme:dark}
 .quote-goto-finance{align-self:flex-start}
 @media(max-width:760px){.quote-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.quote-overview{padding:13px;gap:12px}.quote-overview-grid{gap:8px}.quote-overview-grid>div{padding:12px 10px}.quote-overview-grid span{font-size:.7rem}.quote-overview-grid strong{font-size:1.02rem}.quote-overview-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.quote-overview-actions button{flex:auto;padding:9px 7px;font-size:.71rem;white-space:normal}#orc-form-wrap .quote-work-panel>summary{padding:14px 11px;gap:10px}.quote-step-icon{width:33px;height:33px}.quote-panel-body{padding:0 11px 13px}.quote-charge-check>div,.quote-receipt-summary>div{flex-wrap:wrap}.quote-charge-final strong{font-size:1.08rem}}
+
+/* 2.3.3 — Campos exclusivos do cartão de recuperação de acesso. */
+.auth-helper{font-size:.87rem;line-height:1.55;color:var(--muted)}
+.auth-field-label{color:var(--text);font-size:.83rem;font-weight:700;margin-bottom:-8px}
+.auth-feedback{font-size:.85rem;line-height:1.5;color:var(--accent);border:1px solid var(--border);background:var(--surface-2);padding:12px;border-radius:12px;overflow-wrap:anywhere}
+.auth-feedback.auth-error{color:var(--text);border-color:#d66c75}
+.auth-form button:disabled{cursor:not-allowed;opacity:.55}
