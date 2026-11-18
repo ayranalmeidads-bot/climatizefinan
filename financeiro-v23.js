@@ -130,7 +130,7 @@ formRegister.addEventListener('submit', async (e) => {
         const { error } = await supabase10.auth.signUp({ 
             email, 
             password: senha,
-            options: { data: { nome: nome }, emailRedirectTo: `${CLIMATIZE_AUTH_URL}?auth_action=confirmed` }
+            options: { data: { nome: nome, termos_versao: '1.0', termos_aceito_em: new Date().toISOString() }, emailRedirectTo: `${CLIMATIZE_AUTH_URL}?auth_action=confirmed` }
         });
         if (error) throw error;
 

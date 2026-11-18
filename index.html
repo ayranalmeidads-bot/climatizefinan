@@ -5,9 +5,10 @@
 <script>(function(){try{var saved=localStorage.getItem("climatize_theme_v21");document.documentElement.dataset.theme=saved==="dark"||saved==="light"?saved:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");}catch(e){document.documentElement.dataset.theme="light"}})();</script><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Climatize · Gestão Inteligente</title>
-<meta name="climatize-build" content="2.3.4-20261117"/>
+<meta name="climatize-build" content="2.3.5-20261117"/>
 <!-- CSS Principal -->
 <link href="ui-v23.css?v=20261117.2340" rel="stylesheet"/>
+<link href="legal.css?v=20261117.2350" rel="stylesheet"/>
 <!-- PWA Manifest -->
 <link href="manifest.json?v=20261114.22" rel="manifest"/>
 <!-- Chart.js para Gráficos -->
@@ -43,6 +44,7 @@
 <p id="login-reset-status" class="auth-feedback hidden" role="status" aria-live="polite"></p>
 <p class="toggle-text"><a href="#" id="go-to-recovery">Esqueci minha senha</a></p>
 <p class="toggle-text">Ainda não tem conta? <a href="#" id="go-to-register">Cadastre-se</a></p>
+<p class="legal-inline-links"><a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a><span aria-hidden="true">·</span><a href="privacidade.html" target="_blank" rel="noopener noreferrer">Privacidade</a></p>
 </form>
 <!-- Formulário de Cadastro -->
 <form class="auth-form" id="form-register">
@@ -55,9 +57,7 @@
 <input id="reg-senha" placeholder="Senha" required="" type="password"/>
 <div class="terms-container">
 <input id="reg-termos" required="" type="checkbox"/>
-<label for="reg-termos">
-                        Declaro que sou responsável pela veracidade dos dados digitados.
-                    </label>
+<label for="reg-termos">Li e aceito os <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>, estou ciente da <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a> e confirmo que os dados informados são verdadeiros.</label>
 </div>
 <button class="btn-primary" type="submit">Cadastrar</button>
 <p class="toggle-text">Já tem uma conta? <a href="#" id="go-to-login">Fazer Login</a></p>
@@ -106,6 +106,7 @@
 <button aria-controls="modulo-agenda" aria-selected="false" class="module-tab" data-modulo="agenda" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="16" rx="3" width="18" x="3" y="5"></rect><path d="M7 3v4M17 3v4M3 10h18M8 14h3M8 17h3"></path></svg><span>Agenda</span></button>
 <button aria-controls="modulo-orcamentos" aria-selected="false" class="module-tab" data-modulo="orcamentos" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M7 3h10l4 4v14H3V3h4zM16 3v5h5M7 12h10M7 16h10"></path></svg><span>Orçamentos</span></button></nav>
 <div aria-live="polite" class="app-flash hidden" id="app-flash" role="status"></div>
+<section id="legal-ack-banner" class="legal-ack-banner hidden" aria-label="Atualização dos termos" aria-live="polite"><div><strong>Transparência no Climatize</strong><p>Atualizamos os <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a> para explicar o uso interno e a proteção dos dados.</p><label><input type="checkbox" id="legal-ack-check"> Li os Termos e estou ciente da Política de Privacidade.</label><p class="legal-ack-status hidden" id="legal-ack-status" role="status"></p></div><button type="button" id="legal-ack-button" class="btn-primary" disabled>Registrar ciência</button></section>
 <main aria-label="Financeiro" class="main-content" id="modulo-financeiro" role="tabpanel"><section class="finance-hero"><div class="finance-hero-copy"><span class="eyebrow"><span class="eyebrow-dot"></span> PAINEL FINANCEIRO</span><h1>Controle que dá <em>tranquilidade.</em></h1><p>Seu fluxo de caixa, serviços e próximos passos em um só lugar.</p><span class="hero-date" id="hero-date"></span></div><div class="hero-actions"><button class="btn-hero" data-scroll-to="card-novo-lancamento" type="button">+ Novo lançamento</button><button class="btn-hero-ghost" data-go-module="orcamentos" type="button">Criar orçamento <span aria-hidden="true">↗</span></button></div><div aria-hidden="true" class="hero-halo"></div></section>
 <!-- Resumo Financeiro -->
 <section aria-label="Resumo financeiro" class="kpi-grid">
@@ -300,11 +301,12 @@
 <details class="quote-work-panel quote-revision-panel" id="orc-revisoes-wrap"><summary><span class="quote-step-icon">05</span><span class="quote-step-copy"><strong>Histórico de alterações</strong><small>Versões e revisões registradas</small></span><span class="quote-step-chevron" aria-hidden="true">⌄</span></summary><div class="quote-panel-body"><div class="item-stack" id="orc-revisoes"></div></div></details>
 </section>
 </main>
-<footer class="cl-copyright" aria-label="Direitos autorais">© 2026 ayrandev</footer>
+<footer class="cl-copyright" aria-label="Direitos autorais">© 2026 ayrandev <span aria-hidden="true">·</span> <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a> <span aria-hidden="true">·</span> <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Privacidade e LGPD</a></footer>
 </div>
 <!-- Script Principal JS -->
 <script src="dialogos-v23.js?v=20261117.2340"></script>
 <script src="financeiro-v23.js?v=20261117.2340"></script>
 <script src="modulos-v23.js?v=20261117.2340"></script>
-<script src="interface-v23.js?v=20261117.2340"></script></body>
+<script src="interface-v23.js?v=20261117.2340"></script>
+<script src="legal-ack.js?v=20261117.2350" defer></script></body>
 </html>
