@@ -1,0 +1,20 @@
+/* Ajuda e tour Beta 1.0; acompanha os cards arredondados do Climatize. */
+#modulo-ajuda .cl-help-intro{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+#modulo-ajuda h2{font-size:1.22rem;margin:0 0 8px}#modulo-ajuda p{line-height:1.6}
+.cl-faq-list details{border-bottom:1px solid var(--border);padding:13px 2px}
+.cl-faq-list details:last-child{border:0}.cl-faq-list summary{cursor:pointer;font-weight:750;line-height:1.5;list-style:auto;padding:5px 0}.cl-faq-list details p{margin:10px 0 0;color:var(--muted);font-size:.94rem}
+.cl-help-form{display:grid;grid-template-columns:1fr 1fr;gap:14px}.cl-help-form label{display:flex;flex-direction:column;gap:6px;font-weight:650;color:var(--text)}
+.cl-help-form label:nth-of-type(n+3),.cl-help-form .cl-help-privacy,.cl-help-form button,.cl-help-form #cl-feedback-status{grid-column:1/-1}
+.cl-help-form input,.cl-help-form select,.cl-help-form textarea{width:100%;min-width:0;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;color:var(--text);font:inherit;padding:11px 13px}
+.cl-help-form textarea{resize:vertical}.cl-help-form input:focus,.cl-help-form textarea:focus,.cl-help-form select:focus{outline:2px solid var(--accent);outline-offset:1px}
+.cl-help-privacy{font-size:.82rem;color:var(--muted);margin:0}.cl-help-form #cl-feedback-status{margin:0;color:var(--muted)}.cl-help-form #cl-feedback-status.cl-error{color:#d15b5b}
+.cl-feedback-history{margin-top:24px;padding-top:18px;border-top:1px solid var(--border)}.cl-help-section-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}.cl-help-section-title h3{margin:0}
+.cl-feedback-entry{padding:15px;margin:10px 0;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);overflow-wrap:anywhere}
+.cl-feedback-entry small{color:var(--muted)}.cl-feedback-entry strong{display:block;margin:5px 0}.cl-feedback-entry p{margin:9px 0;white-space:pre-wrap}.cl-feedback-reply{border-left:3px solid var(--accent);padding:8px 12px;background:var(--surface);border-radius:6px}.cl-help-footer{text-align:center;color:var(--muted);font-size:.82rem;padding:8px}
+.cl-tour-dim{position:fixed;inset:0;background:#001921c2;z-index:120;display:flex;align-items:flex-end;justify-content:center;padding:16px 16px max(20px,env(safe-area-inset-bottom,0px))}
+.cl-tour-dim[hidden]{display:none}.cl-tour-card{background:var(--surface);border:2px solid var(--accent);box-shadow:0 18px 55px #001c2c77;max-width:480px;width:100%;border-radius:22px;color:var(--text);padding:23px;max-height:min(70vh,520px);overflow:auto}.cl-tour-card h2{margin:8px 0 10px;font-size:1.4rem}.cl-tour-card p{color:var(--muted);line-height:1.55}.cl-tour-kicker{font-weight:800;letter-spacing:.08em;font-size:.76rem;color:var(--accent-contrast)}.cl-tour-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-top:18px}.cl-tour-actions button{min-height:43px}.cl-tour-card button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:540px){.cl-help-form{grid-template-columns:1fr}.cl-help-form label{grid-column:1/-1}.cl-tour-dim{align-items:center;padding:14px}.cl-tour-card{padding:20px}.module-nav{grid-template-columns:repeat(5,minmax(0,1fr))}.module-tab{min-width:0;padding:7px 2px;font-size:.62rem;letter-spacing:-.01em;gap:4px}.module-tab svg{width:18px;height:18px}}
+.cl-faq-list details>summary{list-style:none;display:flex;align-items:flex-start;gap:8px}
+.cl-faq-list details>summary::-webkit-details-marker{display:none}
+.cl-faq-list details>summary::before{content:'▸';color:var(--accent-contrast);font-size:1rem;flex:none}
+.cl-faq-list details[open]>summary::before{content:'▾'}

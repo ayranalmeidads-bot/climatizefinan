@@ -25,7 +25,7 @@
   function apagarFlash() { $('app-flash').classList.add('hidden'); }
   function erro(e) { console.error('[Climatize 2.0]',e); flash(e?.message || String(e) || 'Não foi possível concluir a ação.',true); }
   function modulo(nome) {
-    ['financeiro','agenda','orcamentos','marketing'].forEach(id => $('modulo-'+id).classList.toggle('hidden',id!==nome));
+    ['financeiro','agenda','orcamentos','marketing','ajuda'].forEach(id => $('modulo-'+id).classList.toggle('hidden',id!==nome));
     document.querySelectorAll('[data-modulo]').forEach(b => { b.classList.toggle('is-active',b.dataset.modulo===nome); b.setAttribute('aria-selected',String(b.dataset.modulo===nome)); });
     apagarFlash();
     if(nome==='agenda') renderCalendario(); if(nome==='orcamentos') renderOrcamentos();

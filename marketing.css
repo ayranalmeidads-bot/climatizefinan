@@ -29,3 +29,89 @@
  .module-tab{font-size:.65rem;padding:7px 2px;min-width:0;min-height:54px}
  .module-tab svg{width:19px;height:19px}
 }
+
+/* Climatize 2.4.2 — UX pontual: escolher > visualizar > tocar e editar */
+.marketing-shell{display:grid;grid-template-columns:minmax(0,.85fr) minmax(310px,1fr);grid-template-areas:'setup preview' 'options preview';gap:18px 22px;align-items:start}
+.marketing-setup{grid-area:setup;display:flex;flex-direction:column;gap:13px;min-width:0}
+.marketing-preview{grid-area:preview;position:sticky;top:15px;align-self:start;min-width:0;border-radius:18px;gap:11px}
+.marketing-options{grid-area:options;min-width:0;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.marketing-options>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;padding:17px 15px;color:var(--title)}
+.marketing-options>summary::-webkit-details-marker{display:none}
+.marketing-options-content{display:flex;flex-direction:column;gap:13px;padding:0 15px 17px}
+.marketing-options[open] .mkt-options-chevron{transform:rotate(180deg)}
+.marketing-step-heading{display:flex;align-items:center;gap:10px;color:var(--title);font-size:.97rem;line-height:1.3}
+.marketing-step-heading>span:first-child{display:grid;place-items:center;flex-shrink:0;background:var(--primary,#42cbd0);color:#032e38;border-radius:50%;width:29px;height:29px;font-size:.86rem;font-weight:850}
+.marketing-canvas-wrap canvas{cursor:pointer;touch-action:manipulation}
+.marketing-canvas-wrap canvas:focus-visible{outline:3px solid var(--primary);outline-offset:4px}
+.marketing-preview-hint{margin:0;text-align:center}
+.mkt-slot-buttons{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;width:100%}
+.mkt-slot-button{border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:999px;padding:7px 10px;font-size:.74rem;font-weight:650;cursor:pointer;min-height:36px}
+.mkt-slot-button:hover,.mkt-slot-button:focus-visible{border-color:var(--primary);color:var(--title)}
+.mkt-upload-guide{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--border);border-radius:13px;background:var(--surface-2);color:var(--muted);font-size:.81rem;line-height:1.4}
+.mkt-upload-guide span strong{color:var(--title)}
+.mkt-upload-guide>span:first-child{font-size:1.15rem;color:var(--primary)}
+.mkt-mosaic-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mkt-mosaic-options label{position:relative;cursor:pointer}
+.mkt-mosaic-options input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer}
+.mkt-mosaic-options span{display:block;text-align:center;border:1px solid var(--border);border-radius:12px;padding:12px 3px;background:var(--surface-2);color:var(--text);font-size:.85rem;font-weight:700}
+.mkt-mosaic-options input:checked+span{background:var(--primary);border-color:var(--primary);color:#06323d}
+.mkt-mosaic-options input:focus-visible+span{outline:3px solid var(--primary);outline-offset:3px}
+.mkt-sr-only{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;clip-path:inset(50%)!important;pointer-events:none!important}
+/* Editor separado da página: preview grande sempre junto dos controles. */
+.mkt-editor-backdrop[hidden],#mkt-mosaic-wrap[hidden]{display:none!important}
+.mkt-editor-open{overflow:hidden!important}
+.mkt-editor-backdrop{position:fixed;inset:0;z-index:200000;display:flex;align-items:center;justify-content:center;padding:14px;background:#061c25e8;backdrop-filter:blur(7px)}
+.mkt-editor-dialog{width:min(100%,800px);max-height:calc(100dvh - 26px);display:flex;flex-direction:column;min-height:0;overflow:hidden;color:var(--text);background:var(--surface,#102731);border:1px solid var(--border);box-shadow:0 24px 80px #0009;border-radius:22px}
+.mkt-editor-header{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:14px 18px 10px;flex-shrink:0}
+.mkt-editor-header strong{display:block;font-size:1.14rem;color:var(--title)}
+.mkt-editor-header small{display:block;color:var(--muted);font-size:.73rem;margin-top:3px}
+.mkt-editor-close{display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--border);color:var(--title);border-radius:12px;width:41px;height:41px;flex:none;cursor:pointer;font-size:1.1rem}
+.mkt-editor-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;flex:0 1 auto;background:#071c28;padding:10px 10px 6px;overflow:hidden}
+.mkt-editor-stage canvas{display:block;max-width:100%;max-height:min(43dvh,460px);height:auto;width:auto;touch-action:none;cursor:grab;border-radius:11px;box-shadow:0 4px 20px #0006;object-fit:contain}
+.mkt-editor-stage canvas:active{cursor:grabbing}
+.mkt-editor-stage-tip{font-size:.71rem;color:#c0e5e9;padding-top:6px;text-align:center}
+.mkt-editor-tools{padding:12px 16px 18px;overflow-y:auto;overscroll-behavior:contain;min-height:0;flex:1 1 auto;scrollbar-width:thin}
+.mkt-editor-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.mkt-editor-toolbar button{flex:1 1 0;min-width:85px;min-height:38px;border:1px solid var(--border);color:var(--title);border-radius:11px;background:var(--surface-2);font:700 .78rem system-ui;cursor:pointer}
+.mkt-editor-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 18px}
+.mkt-editor-controls label{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:4px;font-size:.81rem;font-weight:700;color:var(--title)}
+.mkt-editor-controls label output{color:var(--muted);font-weight:600}
+.mkt-editor-controls label input{grid-column:1/-1;width:100%;accent-color:var(--primary);min-height:25px;touch-action:pan-y}
+.mkt-editor-footer{flex-shrink:0;display:flex;gap:9px;border-top:1px solid var(--border);padding:10px 14px max(10px,env(safe-area-inset-bottom));background:var(--surface);}
+.mkt-editor-footer button{flex:1;min-height:46px}
+@media(max-width:780px){
+ .marketing-shell{display:flex;flex-direction:column;gap:13px}
+ .marketing-setup,.marketing-preview,.marketing-options{width:100%}
+ .marketing-preview{position:static;order:2}
+ .marketing-setup{order:1}
+ .marketing-options{order:3}
+ .mkt-editor-backdrop{padding:7px;align-items:center}
+ .mkt-editor-dialog{border-radius:18px;max-height:calc(100dvh - 14px)}
+ .mkt-editor-stage canvas{max-height:min(42dvh,420px)}
+ .mkt-editor-tools{padding:9px 12px 12px}
+ .mkt-editor-controls{gap:8px 12px}
+ .mkt-editor-header{padding:11px 14px 8px}
+}
+@media(max-width:420px){
+ .marketing-shell{padding:12px}
+ .mkt-editor-backdrop{padding:0}
+ .mkt-editor-dialog{height:100dvh;max-height:100dvh;border-radius:0}
+ .mkt-editor-stage canvas{max-height:41dvh}
+ .mkt-editor-stage-tip{font-size:.67rem}
+ .mkt-editor-controls label{font-size:.76rem}
+ .mkt-editor-toolbar button{font-size:.72rem}
+}
+
+/* Editor 2.4.2 – edição integral de textos e composição limpa */
+.mkt-presets{display:flex;flex-direction:column;gap:9px;padding:12px;border-radius:13px;background:var(--surface-2);border:1px solid var(--border)}
+.mkt-presets>strong{color:var(--title);font-size:.84rem}
+.mkt-presets small{color:var(--muted);font-size:.75rem;line-height:1.45}
+.mkt-preset-actions{display:flex;flex-wrap:wrap;gap:7px}
+.mkt-preset-actions button{min-height:39px;padding:8px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:700 .76rem system-ui;cursor:pointer}
+.mkt-preset-actions button:focus-visible,.mkt-preset-actions button:hover{outline:2px solid var(--primary);outline-offset:2px}
+.mkt-editor-full-preview{display:flex;align-items:center;justify-content:center;gap:13px;padding:7px 12px;background:#0b2630;color:#d7f5f9;font-size:.7rem;font-weight:700;max-height:112px}
+.mkt-editor-full-preview>span{max-width:145px;line-height:1.3}
+.mkt-editor-full-preview canvas{display:block;max-height:94px;max-width:85px;width:auto;height:auto;object-fit:contain;border:1px solid #42808c;border-radius:5px}
+@media(max-width:420px){.mkt-editor-full-preview{max-height:90px;padding:4px 10px}.mkt-editor-full-preview canvas{max-height:80px}.mkt-editor-stage canvas{max-height:35dvh}}
+/* Campos associados somente ao modelo selecionado. */
+#mkt-before-after-fields[hidden],#mkt-services-field[hidden],#mkt-benefits-field[hidden]{display:none!important}

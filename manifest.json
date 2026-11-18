@@ -1,6 +1,6 @@
 {
   "short_name": "Climatize",
-  "name": "Climatize 2.0 — Gestão e Orçamentos",
+  "name": "Climatize Beta 1.0 — Gestão de Serviços",
   "icons": [
     {
       "src": "icon-192-v22.png",
@@ -26,5 +26,5 @@
   "theme_color": "#1e4d54",
   "display": "standalone",
   "orientation": "portrait",
-  "description": "Financeiro, agenda e orçamentos Climatize"
+  "description": "Climatize Beta 1.0: financeiro, agenda, orçamentos, marketing, ajuda e suporte"
 }
