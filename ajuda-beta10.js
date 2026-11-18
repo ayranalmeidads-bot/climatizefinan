@@ -12,7 +12,7 @@
  ];
  let tour=null,step=0,previousFocus=null,currentUser=null,autoStarted=false;
  function isVisible(){return !$('app-dashboard')?.classList.contains('hidden') && $('auth-screen')?.classList.contains('hidden');}
- function activateModule(name){document.querySelector(`.module-tab[data-modulo="${name}"]`)?.click();}
+ function activateModule(name){document.querySelector(`[data-modulo="${name}"]`)?.click();}
  function buildTour(){if(tour)return tour;
   tour=document.createElement('div');tour.className='cl-tour-dim';tour.id='cl-tour-overlay';tour.hidden=true;
   tour.innerHTML='<section class="cl-tour-card" role="dialog" aria-modal="true" aria-labelledby="cl-tour-title" aria-describedby="cl-tour-copy"><div class="cl-tour-kicker" id="cl-tour-progress"></div><h2 id="cl-tour-title"></h2><p id="cl-tour-copy"></p><div class="cl-tour-actions"><button class="btn-outline" type="button" id="cl-tour-skip">Pular tour</button><button class="btn-outline" type="button" id="cl-tour-prev">Voltar</button><button class="btn-primary" type="button" id="cl-tour-next">Próximo</button></div></section>';
@@ -38,7 +38,7 @@
  $('cl-feedback-form').reset();status('Mensagem recebida pelo sistema! Você poderá acompanhar a resposta em Minhas solicitações.');await loadMessages();
  }catch(err){const raw=String(err.message||'');status(raw.includes('climatize_feedback_beta10')||raw.includes('schema cache')?'Este recurso ainda não está habilitado no Supabase. Configure o SQL 04 antes de enviar.':raw.includes('limite')||raw.includes('Limite')?'Limite de mensagens atingido. Aguarde antes de tentar novamente.':'Não foi possível enviar agora. Confira sua conexão, aguarde um momento e tente novamente.',true);}finally{button.disabled=false;}}
  function init(){ $('cl-tour-restart')?.addEventListener('click',startTour);$('cl-feedback-form')?.addEventListener('submit',submit);$('cl-feedback-refresh')?.addEventListener('click',loadMessages);
-  document.querySelector('.module-tab[data-modulo="ajuda"]')?.addEventListener('click',loadMessages);
+  $('btn-ajuda-top')?.addEventListener('click',loadMessages);
   if(!db)return;
   const container=$('app-dashboard');if(container){const obs=new MutationObserver(()=>{if(isVisible())autoTour();else{closeTour(false);autoStarted=false;currentUser=null;}});obs.observe(container,{attributes:true,attributeFilter:['class']});}
   db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){currentUser=null;autoStarted=false;closeTour(false);}else if(event==='SIGNED_IN'&&session?.user)setTimeout(autoTour,600);});

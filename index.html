@@ -9,7 +9,7 @@
 <!-- CSS Principal -->
 <link href="ui-v23.css?v=20261117.2340" rel="stylesheet"/>
 <link href="legal.css?v=20261117.2350" rel="stylesheet"/>
-<link href="ajuda-beta10.css?v=1.0.0" rel="stylesheet"/>
+<link href="ajuda-beta10.css?v=1.0.1" rel="stylesheet"/>
 <link href="marketing.css?v=20261118.2422" rel="stylesheet"/><link href="control-v24.css?v=20261118.2400" rel="stylesheet"/>
 <!-- PWA Manifest -->
 <link href="manifest.json?v=20261114.22" rel="manifest"/>
@@ -101,14 +101,14 @@
 <!-- Header com Logo e Ações -->
 <header class="top-bar"><div class="top-inner">
 <div class="brand-lockup"><div class="logo-area"><img alt="Climatize Ar-Condicionado" class="brand-logo climatize-logo-img" src="climatize.png"/></div><div class="brand-caption"><strong>Climatize</strong><span>Gestão de serviços</span></div></div>
-<div class="header-actions"><button aria-label="Alternar tema" aria-pressed="false" class="theme-toggle" id="btn-theme" type="button"><span aria-hidden="true" class="theme-icon">☾</span><span class="theme-label">Modo escuro</span></button><button class="btn-logout btn-settings" id="btn-alterar-senha" type="button" title="Alterar senha" aria-label="Alterar senha"><span aria-hidden="true" class="header-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2"/></svg></span><span class="action-label">Alterar senha</span></button><button class="btn-logout btn-exit" id="btn-logout" type="button"><span aria-hidden="true">↪</span><span class="action-label">Sair</span></button></div>
+<div class="header-actions"><button aria-label="Alternar tema" aria-pressed="false" class="theme-toggle" id="btn-theme" type="button"><span aria-hidden="true" class="theme-icon">☾</span><span class="theme-label">Modo escuro</span></button><button class="btn-logout btn-settings btn-help-top" id="btn-ajuda-top" data-modulo="ajuda" type="button" title="Ajuda, dúvidas frequentes e suporte" aria-label="Ajuda, dúvidas frequentes e suporte" aria-controls="modulo-ajuda" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg><span class="action-label">Ajuda</span></button><button class="btn-logout btn-settings" id="btn-alterar-senha" type="button" title="Alterar senha" aria-label="Alterar senha"><span aria-hidden="true" class="header-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2"/></svg></span><span class="action-label">Alterar senha</span></button><button class="btn-logout btn-exit" id="btn-logout" type="button"><span aria-hidden="true">↪</span><span class="action-label">Sair</span></button></div>
 </div></header>
 <nav aria-label="Navegação principal" class="module-nav" role="tablist">
 <button aria-controls="modulo-financeiro" aria-selected="true" class="module-tab is-active" data-modulo="financeiro" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="18" rx="3" width="18" x="3" y="3"></rect><path d="M3 9h18M9 21V9M13 14h4"></path></svg><span>Financeiro</span></button>
 <button aria-controls="modulo-agenda" aria-selected="false" class="module-tab" data-modulo="agenda" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="16" rx="3" width="18" x="3" y="5"></rect><path d="M7 3v4M17 3v4M3 10h18M8 14h3M8 17h3"></path></svg><span>Agenda</span></button>
 <button aria-controls="modulo-orcamentos" aria-selected="false" class="module-tab" data-modulo="orcamentos" role="tab" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M7 3h10l4 4v14H3V3h4zM16 3v5h5M7 12h10M7 16h10"></path></svg><span>Orçamentos</span></button>
 <button aria-controls="modulo-marketing" aria-selected="false" class="module-tab" data-modulo="marketing" role="tab" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m3 17 5-5 4 4 4-6 5 6"/></svg><span>Marketing</span></button>
-<button aria-controls="modulo-ajuda" aria-selected="false" class="module-tab" data-modulo="ajuda" role="tab" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg><span>Ajuda</span></button></nav>
+</nav>
 <div aria-live="polite" class="app-flash hidden" id="app-flash" role="status"></div>
 <section id="legal-ack-banner" class="legal-ack-banner hidden" aria-label="Atualização dos termos" aria-live="polite"><div><strong>Transparência no Climatize</strong><p>Atualizamos os <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a> para explicar o uso interno e a proteção dos dados.</p><label><input type="checkbox" id="legal-ack-check"> Li os Termos e estou ciente da Política de Privacidade.</label><p class="legal-ack-status hidden" id="legal-ack-status" role="status"></p></div><button type="button" id="legal-ack-button" class="btn-primary" disabled>Registrar ciência</button></section>
 <main aria-label="Financeiro" class="main-content" id="modulo-financeiro" role="tabpanel"><section class="finance-hero"><div class="finance-hero-copy"><span class="eyebrow"><span class="eyebrow-dot"></span> PAINEL FINANCEIRO</span><h1>Controle que dá <em>tranquilidade.</em></h1><p>Seu fluxo de caixa, serviços e próximos passos em um só lugar.</p><span class="hero-date" id="hero-date"></span></div><div class="hero-actions"><button class="btn-hero" data-scroll-to="card-novo-lancamento" type="button">+ Novo lançamento</button><button class="btn-hero-ghost" data-go-module="orcamentos" type="button">Criar orçamento <span aria-hidden="true">↗</span></button></div><div aria-hidden="true" class="hero-halo"></div></section>
@@ -420,10 +420,10 @@ Eficiência</textarea></div>
 <script src="dialogos-v23.js?v=20261118.2410"></script>
 <script src="excel-v24.js?v=20261118.2410"></script>
 <script src="financeiro-v23.js?v=20261118.2410"></script>
-<script src="modulos-v23.js?v=beta1.0.20261118"></script>
+<script src="modulos-v23.js?v=beta1.0.20261118.menu1"></script>
 <script src="interface-v23.js?v=20261117.2340"></script>
 <script src="marketing.js?v=20261118.2422" defer></script>
 <script src="control-v24.js?v=20261118.2400" defer></script>
 <script src="legal-ack.js?v=20261117.2350" defer></script>
-<script src="ajuda-beta10.js?v=1.0.0" defer></script></body>
+<script src="ajuda-beta10.js?v=1.0.1" defer></script></body>
 </html>
