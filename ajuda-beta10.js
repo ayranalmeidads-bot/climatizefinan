@@ -7,7 +7,7 @@
   {module:'agenda',title:'Agenda de serviços',description:'Selecione um dia para ver compromissos ou toque em “+ Compromisso” para agendar visitas e serviços.'},
   {module:'orcamentos',title:'Orçamentos sem confusão',description:'Monte a proposta, gere o PDF, depois confirme os serviços executados e o valor cobrado. Um valor cobrado ainda não é pagamento.'},
   {module:'orcamentos',title:'Recebimento e financeiro',description:'Para o valor realmente recebido aparecer no Financeiro, abra o orçamento e confirme o recebimento no painel correspondente.'},
-  {module:'marketing',title:'Marketing e fotos',description:'Escolha um dos seis modelos, toque nas imagens para recortar e editar, e baixe a arte pronta em PNG.'},
+  {module:'marketing',title:'Marketing e fotos',description:'Escolha um dos seis modelos, toque nas imagens para recortar e editar, e baixe a arte pronta em PNG antes de sair. As fotos e os ajustes não são salvos no banco nem ficam disponíveis para edição depois de atualizar a página.'},
   {module:'ajuda',title:'Ajuda sempre disponível',description:'Nesta aba você pode rever o tour, consultar as dúvidas frequentes e enviar mensagens ao suporte DS. Suas respostas aparecerão em “Minhas solicitações”.'}
  ];
  let tour=null,step=0,previousFocus=null,currentUser=null,autoStarted=false;

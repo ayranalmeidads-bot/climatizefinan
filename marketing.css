@@ -115,3 +115,7 @@
 @media(max-width:420px){.mkt-editor-full-preview{max-height:90px;padding:4px 10px}.mkt-editor-full-preview canvas{max-height:80px}.mkt-editor-stage canvas{max-height:35dvh}}
 /* Campos associados somente ao modelo selecionado. */
 #mkt-before-after-fields[hidden],#mkt-services-field[hidden],#mkt-benefits-field[hidden]{display:none!important}
+
+/* Beta 1.0: aviso discreto de privacidade e necessidade de download, sem alterar as molduras exportadas. */
+.cl-local-photo-alert{background:var(--accent-soft);color:var(--text);border:1px solid var(--accent);border-radius:13px;padding:12px 14px;font-size:.83rem;line-height:1.55;margin:10px 0 14px;}
+.cl-local-photo-alert strong{color:var(--title)}

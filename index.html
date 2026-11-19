@@ -9,8 +9,8 @@
 <!-- CSS Principal -->
 <link href="ui-v23.css?v=20261117.2340" rel="stylesheet"/>
 <link href="legal.css?v=20261117.2350" rel="stylesheet"/>
-<link href="ajuda-beta10.css?v=1.0.1" rel="stylesheet"/>
-<link href="marketing.css?v=20261118.2422" rel="stylesheet"/><link href="control-v24.css?v=20261118.2400" rel="stylesheet"/>
+<link href="ajuda-beta10.css?v=1.0.1" rel="stylesheet"/><link href="senha-visibilidade.css?v=beta1.0-ui1" rel="stylesheet"/>
+<link href="marketing.css?v=beta1.0-ui1" rel="stylesheet"/><link href="control-v24.css?v=20261118.2400" rel="stylesheet"/>
 <!-- PWA Manifest -->
 <link href="manifest.json?v=20261114.22" rel="manifest"/>
 <!-- Chart.js para Gráficos -->
@@ -315,7 +315,7 @@
 </main>
 <!-- Marketing isolado: fotos tratadas localmente; não enviadas ao Supabase -->
 <main aria-label="Marketing" class="main-content hidden" id="modulo-marketing" role="tabpanel">
-<section class="module-heading"><div><span class="eyebrow">Divulgação de serviços</span><h1>Marketing</h1><p>Escolha o modelo, adicione fotos e toque em cada imagem para ajustar antes de baixar. As fotos ficam neste dispositivo.</p></div></section>
+<section class="module-heading"><div><span class="eyebrow">Divulgação de serviços</span><h1>Marketing</h1><p>Escolha o modelo, adicione fotos e toque em cada imagem para ajustar antes de baixar. As fotos são editadas no navegador, sem salvamento no banco. Baixe a arte para guardá-la.</p></div></section>
 <section class="marketing-shell card-section" aria-label="Criador de artes">
  <div class="marketing-setup">
   <div class="marketing-step-heading"><span>1</span><strong>Escolha o modelo</strong></div>
@@ -334,7 +334,7 @@
   <div class="marketing-preview-title"><strong>Prévia da postagem</strong><small id="mkt-dimensoes">1080 × 1350 px</small></div>
   <div class="marketing-canvas-wrap"><canvas id="mkt-canvas" tabindex="0" role="button" width="1080" height="1350" aria-label="Arte. Toque na foto que deseja editar ou adicionar."></canvas><div class="safe-lines" aria-hidden="true"></div></div>
   <div class="mkt-slot-buttons" id="mkt-slot-buttons" aria-label="Acesso às fotos"></div>
-  <p class="marketing-preview-hint">Toque diretamente em qualquer foto para abrir o editor. As guias de segurança para Reels não aparecem no arquivo baixado.</p>
+  <p class="marketing-preview-hint">Toque diretamente em qualquer foto para abrir o editor. As guias de segurança para Reels não aparecem no arquivo baixado.</p><p class="cl-local-photo-alert" role="note"><strong>Importante: salve sua arte antes de sair.</strong> As fotos e os ajustes ficam apenas nesta edição, no navegador. O Marketing não envia nem guarda essas fotos no banco. <strong>Baixe o PNG</strong> para não perder a montagem ao fechar ou atualizar a página.</p>
   <div class="marketing-actions"><button class="btn-primary" type="button" id="mkt-download">Baixar arte PNG</button><button class="btn-outline" type="button" id="mkt-reset">Limpar fotos</button></div>
   <p class="marketing-hint" id="mkt-status" role="status" aria-live="polite">Escolha suas fotos para começar.</p>
  </div>
@@ -393,10 +393,10 @@ Eficiência</textarea></div>
 <details><summary>Qual é a diferença entre valor cobrado e recebido?</summary><p>Primeiro confirme os serviços executados e o <strong>valor efetivamente cobrado</strong>. Depois, em <strong>Recebimentos</strong> dentro do orçamento, registre o pagamento que realmente ocorreu. Só o recebimento confirmado deve aparecer como entrada financeira correspondente.</p></details>
 <details><summary>Como agendar e acompanhar um serviço?</summary><p>Na <strong>Agenda</strong>, escolha o dia e clique em <strong>+ Compromisso</strong>. No orçamento, o painel de agendamento fica recolhido até você precisar dele.</p></details>
 <details><summary>Como baixar relatório PDF ou Excel?</summary><p>No <strong>Financeiro</strong>, abra <strong>Filtrar dados do relatório</strong>, selecione período, tipo e categoria. Depois baixe o PDF ou uma planilha Excel verdadeira (.xlsx), escolhendo o nome do arquivo.</p></details>
-<details><summary>Como criar uma arte para Instagram?</summary><p>Em <strong>Marketing</strong>, selecione um dos seis modelos, envie as fotos e toque nelas para editar o enquadramento. Escolha mosaicos de 2, 4 ou 6 fotos e personalizações com ou sem texto. O download é em PNG, feito no seu dispositivo.</p></details>
+<details><summary>Como criar uma arte para Instagram?</summary><p>Em <strong>Marketing</strong>, selecione um dos seis modelos, envie as fotos e toque nelas para editar o enquadramento. Escolha mosaicos de 2, 4 ou 6 fotos e personalizações com ou sem texto. Toque em <strong>Baixar arte PNG</strong> antes de sair. As fotos e a montagem não são salvas para continuar depois.</p></details>
 <details><summary>Como atualizar o aplicativo?</summary><p>Abra novamente o endereço do Climatize e atualize a página. Se a versão antiga continuar aparecendo, feche o aplicativo, limpe somente o cache do site no navegador e reabra. Evite apagar os dados do site sem necessidade; depois entre com o mesmo login.</p></details>
 <details><summary>Esqueci minha senha. Como recupero o acesso?</summary><p>No login, escolha <strong>Esqueci minha senha</strong>. Abra o link mais recente recebido no e-mail e siga a página para cadastrar uma nova senha. Se o link expirar, solicite outro, respeitando o intervalo de segurança do Supabase.</p></details>
-<details><summary>Meus dados ficam salvos? E as fotos?</summary><p>As informações operacionais são armazenadas no Supabase conforme as permissões de cada conta. As fotos do editor de Marketing são trabalhadas localmente no navegador e não são enviadas ao Supabase pelo editor.</p></details>
+<details><summary>Meus dados ficam salvos? E as fotos?</summary><p>As informações operacionais são armazenadas no Supabase conforme as permissões de cada conta. As fotos e os ajustes do Marketing são tratados somente no navegador e não são enviados pelo editor ao banco de dados. <strong>A montagem não é salva automaticamente</strong>: baixe a imagem PNG antes de sair ou atualizar a página, pois será necessário remontá-la depois.</p></details>
 <details><summary>Como informar um erro ou sugerir melhorias?</summary><p>Utilize o formulário abaixo. Sua mensagem aparecerá na Central do desenvolvedor após a integração SQL. Acompanhe aqui o status e eventual resposta; não envie senhas, tokens, CPF nem dados sensíveis de clientes.</p></details>
 </section>
 <section class="card-section cl-help-contact" aria-labelledby="cl-contact-title"><div class="cl-help-section-title"><div><h2 id="cl-contact-title">Enviar dúvida ou feedback</h2><p>O suporte DS recebe sua mensagem na Central de Controle.</p></div></div>
@@ -411,7 +411,7 @@ Eficiência</textarea></div>
 </form>
 <div class="cl-feedback-history"><div class="cl-help-section-title"><h3>Minhas solicitações</h3><button type="button" class="btn-outline" id="cl-feedback-refresh">Atualizar</button></div><div id="cl-feedback-items" aria-live="polite">Abra esta área para consultar suas mensagens.</div></div>
 </section>
-<div class="cl-help-footer"><a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a> · <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a> · <a href="mailto:ayranalmeidads@gmail.com">Contato DS</a></div>
+<!-- Rodapé institucional único: links disponíveis no cl-copyright global. -->
 </main>
 
 <footer class="cl-copyright" aria-label="Direitos autorais">Climatize · Ferramenta de apoio operacional <span aria-hidden="true">·</span> Uso restrito <span aria-hidden="true">·</span> <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a> <span aria-hidden="true">·</span> <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Privacidade e LGPD</a> <span aria-hidden="true">·</span> <a href="mailto:ayranalmeidads@gmail.com">Suporte técnico</a></footer>
@@ -425,5 +425,5 @@ Eficiência</textarea></div>
 <script src="marketing.js?v=20261118.2422" defer></script>
 <script src="control-v24.js?v=20261118.2400" defer></script>
 <script src="legal-ack.js?v=20261117.2350" defer></script>
-<script src="ajuda-beta10.js?v=1.0.1" defer></script></body>
+<script src="ajuda-beta10.js?v=beta1.0-ui1" defer></script><script src="senha-visibilidade.js?v=beta1.0-ui1" defer></script></body>
 </html>
